@@ -1,0 +1,40 @@
+/*
+ * Design tokens. Each token becomes utilities:
+ * --color-ink → text-ink, bg-ink…   --radius-card → rounded-card   --text-title → text-title
+ * All text colors meet WCAG AA (≥ 4.5:1) on canvas and surface.
+ */
+@theme {
+  /* Drop Tailwind's default palette so only our tokens are available. */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Warm palette taken from the auth illustration (src/assets/auth/). */
+  --color-canvas: #fcfbf2; /* cream, matches the illustration background */
+  --color-surface: #ffffff;
+  --color-ink: #1f2419; /* 15.3:1 on canvas */
+  --color-ink-muted: #5c5f4e; /* 6.3:1 on canvas */
+  --color-line: #e9e4d0; /* decorative dividers only */
+  --color-line-strong: #7d7b69; /* input borders, 4.1:1 on canvas (needs 3:1) */
+  --color-brand: #3d6b22; /* leaf green; white text on it 6.3:1 */
+  --color-brand-hover: #325a1b;
+  --color-brand-soft: #eef4e2; /* light highlight background; brand text on it 5.6:1 */
+  --color-on-brand: #ffffff;
+  --color-danger: #b42318; /* 6.3:1 on canvas */
+  --color-focus: #0f766e; /* teal from the illustration, 5.3:1 on canvas */
+
+  /* Nunito is self-hosted (@fontsource-variable/nunito, imported in main.tsx); fallback in fonts.css. */
+  --font-sans: 'Nunito Variable', 'Nunito Fallback', system-ui, sans-serif;
+
+  --text-title: 1.875rem;
+  --text-title--line-height: 2.25rem;
+  --text-title--font-weight: 600;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
+  --text-heading--font-weight: 600;
+
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.1);
+}

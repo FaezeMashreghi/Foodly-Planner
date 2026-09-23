@@ -1,0 +1,29 @@
+/*
+ * Background for the auth pages. Phones and tablets get only the canvas color;
+ * the illustration is set inside media queries, so small screens never download it.
+ * image-set() lets the browser pick one file: AVIF if supported, else WebP,
+ * at 1x or 2x screen density. Browsers without image-set() just show the canvas color.
+ */
+@utility auth-background {
+  @apply bg-canvas;
+
+  @variant lg {
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-image: image-set(
+      url('../../assets/auth/auth-background-1600.avif') type('image/avif') 1x,
+      url('../../assets/auth/auth-background-2400.avif') type('image/avif') 2x,
+      url('../../assets/auth/auth-background-1600.webp') type('image/webp') 1x,
+      url('../../assets/auth/auth-background-2400.webp') type('image/webp') 2x
+    );
+  }
+
+  /* Wider than 1600px: the 1600px file would be stretched, so always use 2400px. */
+  @media (width >= 100rem) {
+    background-image: image-set(
+      url('../../assets/auth/auth-background-2400.avif') type('image/avif'),
+      url('../../assets/auth/auth-background-2400.webp') type('image/webp')
+    );
+  }
+}

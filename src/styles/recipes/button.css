@@ -1,0 +1,24 @@
+/* Shared button base. min-h-11 = 44px touch target. */
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control px-4 py-2 font-medium transition-colors;
+
+  &:is(:disabled, [aria-disabled='true']) {
+    @apply cursor-not-allowed opacity-50;
+  }
+}
+
+@utility btn-primary {
+  @apply btn bg-brand text-on-brand;
+
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    @apply bg-brand-hover;
+  }
+}
+
+@utility btn-secondary {
+  @apply btn border border-line-strong bg-surface text-ink;
+
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    @apply bg-canvas;
+  }
+}

@@ -1,0 +1,13 @@
+/*
+ * Arial resized to match Nunito's metrics, shown until Nunito loads
+ * (font-display: swap), so the text doesn't jump when the font swaps in.
+ * Values computed from both fonts' metrics with @capsizecss/metrics.
+ */
+@font-face {
+  font-family: 'Nunito Fallback';
+  src: local('Arial'), local('Arimo'), local('Liberation Sans');
+  size-adjust: 101.39%;
+  ascent-override: 99.71%;
+  descent-override: 34.82%;
+  line-gap-override: 0%;
+}
