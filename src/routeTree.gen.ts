@@ -9,27 +9,180 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as GuestRouteImport } from './routes/_guest'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as GuestConfirmEmailRouteImport } from './routes/_guest/confirm-email'
+import { Route as GuestForgotPasswordRouteImport } from './routes/_guest/forgot-password'
+import { Route as GuestSignInRouteImport } from './routes/_guest/sign-in'
+import { Route as GuestSignUpRouteImport } from './routes/_guest/sign-up'
 
-export interface FileRoutesByFullPath {}
-export interface FileRoutesByTo {}
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuestRoute = GuestRouteImport.update({
+  id: '/_guest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const GuestConfirmEmailRoute = GuestConfirmEmailRouteImport.update({
+  id: '/confirm-email',
+  path: '/confirm-email',
+  getParentRoute: () => GuestRoute,
+} as any)
+const GuestForgotPasswordRoute = GuestForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => GuestRoute,
+} as any)
+const GuestSignInRoute = GuestSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => GuestRoute,
+} as any)
+const GuestSignUpRoute = GuestSignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => GuestRoute,
+} as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedIndexRoute
+  '/confirm-email': typeof GuestConfirmEmailRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
+  '/sign-in': typeof GuestSignInRoute
+  '/sign-up': typeof GuestSignUpRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof AuthenticatedIndexRoute
+  '/confirm-email': typeof GuestConfirmEmailRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
+  '/sign-in': typeof GuestSignInRoute
+  '/sign-up': typeof GuestSignUpRoute
+}
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_guest': typeof GuestRouteWithChildren
+  '/_guest/confirm-email': typeof GuestConfirmEmailRoute
+  '/_guest/forgot-password': typeof GuestForgotPasswordRoute
+  '/_guest/sign-in': typeof GuestSignInRoute
+  '/_guest/sign-up': typeof GuestSignUpRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: never
+  fullPaths:
+    '/' | '/confirm-email' | '/forgot-password' | '/sign-in' | '/sign-up'
   fileRoutesByTo: FileRoutesByTo
-  to: never
-  id: '__root__'
+  to: '/' | '/confirm-email' | '/forgot-password' | '/sign-in' | '/sign-up'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/_guest'
+    | '/_guest/confirm-email'
+    | '/_guest/forgot-password'
+    | '/_guest/sign-in'
+    | '/_guest/sign-up'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
-export interface RootRouteChildren {}
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {}
+export interface RootRouteChildren {
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  GuestRoute: typeof GuestRouteWithChildren
 }
 
-const rootRouteChildren: RootRouteChildren = {}
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_guest': {
+      id: '/_guest'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof GuestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_guest/confirm-email': {
+      id: '/_guest/confirm-email'
+      path: '/confirm-email'
+      fullPath: '/confirm-email'
+      preLoaderRoute: typeof GuestConfirmEmailRouteImport
+      parentRoute: typeof GuestRoute
+    }
+    '/_guest/forgot-password': {
+      id: '/_guest/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof GuestForgotPasswordRouteImport
+      parentRoute: typeof GuestRoute
+    }
+    '/_guest/sign-in': {
+      id: '/_guest/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof GuestSignInRouteImport
+      parentRoute: typeof GuestRoute
+    }
+    '/_guest/sign-up': {
+      id: '/_guest/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof GuestSignUpRouteImport
+      parentRoute: typeof GuestRoute
+    }
+  }
+}
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+interface GuestRouteChildren {
+  GuestConfirmEmailRoute: typeof GuestConfirmEmailRoute
+  GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
+  GuestSignInRoute: typeof GuestSignInRoute
+  GuestSignUpRoute: typeof GuestSignUpRoute
+}
+
+const GuestRouteChildren: GuestRouteChildren = {
+  GuestConfirmEmailRoute: GuestConfirmEmailRoute,
+  GuestForgotPasswordRoute: GuestForgotPasswordRoute,
+  GuestSignInRoute: GuestSignInRoute,
+  GuestSignUpRoute: GuestSignUpRoute,
+}
+
+const GuestRouteWithChildren = GuestRoute._addFileChildren(GuestRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  GuestRoute: GuestRouteWithChildren,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
