@@ -2,8 +2,9 @@ import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { AppHeader } from '@/components/layout/app-header/app-header'
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: ({ context, location }) => {
-    if (!context.auth.getUser()) {
+  beforeLoad: async ({ context, location }) => {
+    // Refreshes an expired access token, or signs out if the session is dead.
+    if (!(await context.auth.getAccessToken())) {
       throw redirect({ to: '/sign-in', search: { redirect: location.href } })
     }
   },

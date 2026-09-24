@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import '@fontsource-variable/nunito'
 import './index.css'
-import { getUser, subscribe } from '@/api/auth/session'
+import { getAccessToken, getUser, subscribe } from '@/api/auth/session'
 import { routeTree } from './routeTree.gen'
 
-const router = createRouter({ routeTree, context: { auth: { getUser } } })
+const router = createRouter({ routeTree, context: { auth: { getUser, getAccessToken } } })
 
 // Re-run the route guards when the user signs in or out (e.g. the session expires).
 subscribe(() => router.invalidate())
