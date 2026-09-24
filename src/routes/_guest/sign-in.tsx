@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { SignInForm } from '../../components/auth/sign-in-form/sign-in-form'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { SignInForm } from '@/components/auth/sign-in-form/sign-in-form'
 
 export const Route = createFileRoute('/_guest/sign-in')({
   component: SignInPage,
@@ -14,6 +14,13 @@ function SignInPage() {
       </div>
 
       <SignInForm />
+
+      <p className="text-ink-muted">
+        New to Foodly?{' '}
+        <Link to="/sign-up" className="link">
+          Create an account
+        </Link>
+      </p>
     </>
   )
 }

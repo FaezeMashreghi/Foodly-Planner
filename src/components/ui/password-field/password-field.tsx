@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TextField, type TextFieldProps } from '../text-field/text-field'
+import { TextField, type TextFieldProps } from '@/components/ui/text-field/text-field'
 
 type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'action'>
 
