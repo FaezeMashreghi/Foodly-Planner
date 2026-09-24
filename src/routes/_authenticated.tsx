@@ -14,7 +14,7 @@ function AuthenticatedLayout() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8">
         <Outlet />
       </main>
     </>
