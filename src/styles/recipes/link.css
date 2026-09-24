@@ -1,0 +1,8 @@
+/* Text link. Underlined so links aren't shown by color alone (WCAG 1.4.1). */
+@utility link {
+  @apply font-medium text-brand underline underline-offset-2;
+
+  &:hover {
+    @apply text-brand-hover decoration-2;
+  }
+}

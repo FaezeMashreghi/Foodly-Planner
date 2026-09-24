@@ -7,4 +7,3 @@ export const Route = createFileRoute('/_authenticated/')({
 function WeeklyPlanPage() {
   return <h1 className="text-title">Your week</h1>
 }
-
