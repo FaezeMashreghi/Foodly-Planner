@@ -1,6 +1,13 @@
-import { Outlet, createFileRoute } from '@tanstack/react-router'
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { safeRedirect } from '@/lib/safe-redirect'
 
 export const Route = createFileRoute('/_guest')({
+  beforeLoad: ({ context, location }) => {
+    if (context.auth.getUser()) {
+      const search = location.search as { redirect?: unknown }
+      throw redirect({ href: safeRedirect(search.redirect) ?? '/' })
+    }
+  },
   component: GuestLayout,
 })
 
