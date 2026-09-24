@@ -1,7 +1,9 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { SignInForm } from '@/components/auth/sign-in-form/sign-in-form'
+import { safeRedirect } from '@/lib/safe-redirect'
 
 export const Route = createFileRoute('/_guest/sign-in')({
+  validateSearch: (search): { redirect?: string } => ({ redirect: safeRedirect(search.redirect) }),
   component: SignInPage,
 })
 
