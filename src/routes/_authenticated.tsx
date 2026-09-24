@@ -1,4 +1,5 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { AppHeader } from '@/components/layout/app-header/app-header'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
@@ -10,5 +11,12 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AuthenticatedLayout() {
-  return <Outlet />
+  return (
+    <>
+      <AppHeader />
+      <main className="mx-auto max-w-5xl px-4 py-8">
+        <Outlet />
+      </main>
+    </>
+  )
 }
