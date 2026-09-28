@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import type { AuthUser } from '@/api/auth/session'
@@ -7,6 +9,7 @@ export type RouterContext = {
     getUser: () => AuthUser | null
     getAccessToken: () => Promise<string | null>
   }
+  queryClient: QueryClient
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -18,6 +21,7 @@ function RootLayout() {
     <>
       <Outlet />
       {import.meta.env.DEV && <TanStackRouterDevtools />}
+      <ReactQueryDevtools buttonPosition="bottom-left" />
     </>
   )
 }

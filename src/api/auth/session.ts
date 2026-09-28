@@ -39,7 +39,11 @@ export async function signOut(): Promise<void> {
 export async function getAccessToken(): Promise<string | null> {
   if (!tokens) return null
   if (tokens.expiresAt - Date.now() > REFRESH_MARGIN_MS) return tokens.accessToken
+  return refreshAccessToken()
+}
 
+/** Gets a new access token even if the current one looks valid (e.g. the API rejected it). */
+export async function refreshAccessToken(): Promise<string | null> {
   // One refresh at a time; concurrent callers share it.
   refreshing ??= refresh().finally(() => {
     refreshing = null
