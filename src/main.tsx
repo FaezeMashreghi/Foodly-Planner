@@ -14,8 +14,12 @@ const router = createRouter({
   context: { auth: { getUser, getAccessToken }, queryClient },
 })
 
-// Re-run the route guards when the user signs in or out (e.g. the session expires).
-subscribe(() => router.invalidate())
+// When the user signs in or out (or the session expires): drop the previous user's data,
+// then re-run the route guards and loaders.
+subscribe(() => {
+  queryClient.clear()
+  void router.invalidate()
+})
 
 declare module '@tanstack/react-router' {
   interface Register {

@@ -7,13 +7,14 @@ import { AuthErrorName, getAuthErrorMessage, isAuthError } from '@/api/auth/erro
 import { useForm } from '@/hooks/use-form'
 import { FormError } from '@/components/ui/form-error/form-error'
 import { TextField } from '@/components/ui/text-field/text-field'
+import { ROUTES } from '@/lib/routes'
 
 export function ConfirmEmailForm({ email: knownEmail }: { email?: string }) {
   const navigate = useNavigate()
   const [formError, setFormError] = useState<string>()
   const [status, setStatus] = useState('')
 
-  const goToSignIn = () => navigate({ to: '/sign-in', search: { notice: 'confirmed' } })
+  const goToSignIn = () => navigate({ to: ROUTES.signIn, search: { notice: 'confirmed' } })
 
   const form = useForm({
     initialValues: { email: knownEmail ?? '', code: '' },
