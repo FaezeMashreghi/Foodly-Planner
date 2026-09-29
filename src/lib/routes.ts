@@ -7,15 +7,14 @@ import type { FileRoutesByTo } from '@/routeTree.gen'
 export const ROUTES = {
   home: '/',
   weeklyPlan: '/weekly-plan',
-  chat: '/chat',
+  planQuestions: '/plan-questions',
   signIn: '/sign-in',
   signUp: '/sign-up',
   confirmEmail: '/confirm-email',
   forgotPassword: '/forgot-password',
 } as const satisfies Record<string, keyof FileRoutesByTo>
 
-
 export const NAV_LINKS = [
   { to: ROUTES.weeklyPlan, label: 'Weekly plan' },
-  { to: ROUTES.chat, label: 'Plan with AI' },
+  { to: ROUTES.planQuestions, label: 'Plan with Foodly' },
 ] as const
