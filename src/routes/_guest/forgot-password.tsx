@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { RequestResetForm } from '@/components/auth/request-reset-form/request-reset-form'
 import { ResetPasswordForm } from '@/components/auth/reset-password-form/reset-password-form'
+import { ROUTES } from '@/lib/routes'
 
 export const Route = createFileRoute('/_guest/forgot-password')({
   validateSearch: (search): { email?: string } => ({
@@ -26,7 +27,7 @@ function ForgotPasswordPage() {
       {email ? <ResetPasswordForm email={email} /> : <RequestResetForm />}
 
       <p className="text-ink-muted">
-        <Link to="/sign-in" className="link">
+        <Link to={ROUTES.signIn} className="link">
           Back to sign in
         </Link>
       </p>

@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { SignUpForm } from '@/components/auth/sign-up-form/sign-up-form'
+import { ROUTES } from '@/lib/routes'
 
 export const Route = createFileRoute('/_guest/sign-up')({
   component: SignUpPage,
@@ -17,7 +18,7 @@ function SignUpPage() {
 
       <p className="text-ink-muted">
         Already have an account?{' '}
-        <Link to="/sign-in" className="link">
+        <Link to={ROUTES.signIn} className="link">
           Sign in
         </Link>
       </p>

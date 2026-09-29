@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { SignInForm } from '@/components/auth/sign-in-form/sign-in-form'
 import { safeRedirect } from '@/lib/safe-redirect'
+import { ROUTES } from '@/lib/routes'
 
 type Notice = 'confirmed' | 'password-reset'
 
@@ -39,7 +40,7 @@ function SignInPage() {
 
       <p className="text-ink-muted">
         New to Foodly?{' '}
-        <Link to="/sign-up" className="link">
+        <Link to={ROUTES.signUp} className="link">
           Create an account
         </Link>
       </p>
