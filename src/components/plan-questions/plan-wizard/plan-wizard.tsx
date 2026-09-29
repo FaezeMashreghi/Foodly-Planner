@@ -1,36 +1,37 @@
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { TextArea } from '@/components/ui/text-area/text-area'
-import { PLAN_QUESTIONS, type PlanAnswersText } from './questions'
+import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { MAX_ANSWER_LENGTH } from '@shared/plan/plan-limits'
+import { StepProgress } from '@/components/ui/step-progress/step-progress'
+import { TextArea } from '@/components/ui/text-area/text-area'
+import { useFocusOnChange } from '@/hooks/use-focus-on-change'
+import { useSlideDirection } from '@/hooks/use-slide-direction'
+import { PLAN_QUESTIONS, type PlanAnswersText } from './questions'
+
+const slideClass = {
+  next: 'animate-slide-in-next',
+  back: 'animate-slide-in-back',
+}
+
 type PlanWizardProps = {
-  /** Answers to start from, e.g. when the user comes back to change them. */
+  questionIndex: number
   initialAnswers?: PlanAnswersText
-  /** Called with every answer (empty if skipped) after the last question. */
+  onQuestionChange: (questionIndex: number, answers: PlanAnswersText) => void
   onDone: (answers: PlanAnswersText) => void
 }
 
-export function PlanWizard({ initialAnswers = {}, onDone }: PlanWizardProps) {
-  const [step, setStep] = useState(0)
-  const [direction, setDirection] = useState<'next' | 'back'>('next')
+export function PlanWizard({
+  questionIndex,
+  initialAnswers = {},
+  onQuestionChange,
+  onDone,
+}: PlanWizardProps) {
   const [answers, setAnswers] = useState<PlanAnswersText>(initialAnswers)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const moved = useRef(false)
+  const direction = useSlideDirection(questionIndex)
+  const inputRef = useFocusOnChange<HTMLTextAreaElement>(questionIndex)
   const progressId = useId()
 
-  const question = PLAN_QUESTIONS[step]
-  const isLast = step === PLAN_QUESTIONS.length - 1
-
-  // After Next or Back, focus the new answer box: a screen reader then reads the new question.
-  // Not on the first render, so arriving on the page starts at its title.
-  useEffect(() => {
-    if (moved.current) inputRef.current?.focus()
-  }, [step])
-
-  function go(to: number) {
-    moved.current = true
-    setDirection(to > step ? 'next' : 'back')
-    setStep(to)
-  }
+  const question = PLAN_QUESTIONS[questionIndex]
+  const isFirst = questionIndex === 0
+  const isLast = questionIndex === PLAN_QUESTIONS.length - 1
 
   // Enter makes a new line; Ctrl+Enter (⌘+Enter on a Mac) goes on, as in many apps.
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -43,30 +44,24 @@ export function PlanWizard({ initialAnswers = {}, onDone }: PlanWizardProps) {
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (isLast) onDone(answers)
-    else go(step + 1)
+    else onQuestionChange(questionIndex + 1, answers)
+  }
+
+  function handleBack() {
+    onQuestionChange(questionIndex - 1, answers)
   }
 
   return (
     <section aria-label="Plan questions" className="space-y-4 overflow-hidden card">
-      <div className="flex items-center justify-between gap-4">
-        <p id={progressId} className="text-sm font-semibold text-ink-muted">
-          Question {step + 1} of {PLAN_QUESTIONS.length}
-        </p>
-        <ol aria-hidden="true" className="flex gap-1.5">
-          {PLAN_QUESTIONS.map((item, index) => (
-            <li
-              key={item.id}
-              className={`size-2.5 rounded-full ${index <= step ? 'bg-brand' : 'bg-line'}`}
-            />
-          ))}
-        </ol>
-      </div>
+      <StepProgress
+        id={progressId}
+        current={questionIndex + 1}
+        total={PLAN_QUESTIONS.length}
+        label="Question"
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div
-          key={step}
-          className={direction === 'next' ? 'animate-slide-in-next' : 'animate-slide-in-back'}
-        >
+        <div key={questionIndex} className={slideClass[direction]}>
           <TextArea
             ref={inputRef}
             label={question.text}
@@ -81,18 +76,17 @@ export function PlanWizard({ initialAnswers = {}, onDone }: PlanWizardProps) {
         </div>
 
         <p className="text-sm text-ink-muted">
-          Tip: press Ctrl + Enter (⌘ + Enter on a Mac) to go on.
+          Tip: press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (<kbd>⌘</kbd> + <kbd>Enter</kbd> on a Mac)
+          to go on.
         </p>
 
-        <div className="flex justify-between gap-2">
-          {step > 0 ? (
-            <button type="button" className="btn-secondary" onClick={() => go(step - 1)}>
+        <div className="flex gap-2">
+          {!isFirst && (
+            <button type="button" className="btn-secondary" onClick={handleBack}>
               Back
             </button>
-          ) : (
-            <span />
           )}
-          <button type="submit" className="btn-primary">
+          <button type="submit" className="ml-auto btn-primary">
             {isLast ? 'Find meals' : 'Next'}
           </button>
         </div>

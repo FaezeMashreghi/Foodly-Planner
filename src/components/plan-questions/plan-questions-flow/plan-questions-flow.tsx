@@ -1,53 +1,48 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import { EMPTY_PLAN_ANSWERS, type PlanAnswers } from '@shared/week-plan/week-plan'
 import { mealsQueryOptions } from '@/api/foodly/meals'
 import { extractPlanAnswers, savePlanAnswers } from '@/api/foodly/plan'
 import { queryKeys } from '@/api/foodly/query-keys'
-import { FormError } from '@/components/ui/form-error/form-error'
+import { ExtractErrorScreen } from '@/components/plan-questions/extract-error-screen/extract-error-screen'
 import { PlanReview } from '@/components/plan-questions/plan-review/plan-review'
 import { PlanWizard } from '@/components/plan-questions/plan-wizard/plan-wizard'
-import { StartDayScreen } from '@/components/plan-questions/start-day-screen/start-day-screen'
 import {
   answersToText,
   type PlanAnswersText,
 } from '@/components/plan-questions/plan-wizard/questions'
+import { StartDayScreen } from '@/components/plan-questions/start-day-screen/start-day-screen'
 import { ROUTES } from '@/lib/routes'
+import { questionIndexOf, type PlanStep } from './plan-step'
+import { usePlanDraft } from '@/hooks/use-plan-draft'
 
-const EMPTY_PLAN_ANSWERS: PlanAnswers = {
-  expiring: [],
-  wantMore: [],
-  avoid: [],
-  cuisines: [],
-  easyOnly: false,
-  maxPrepMinutes: null,
-  mustHaveMealId: null,
-  mustHaveText: null,
-  notes: [],
+type PlanQuestionsFlowProps = {
+  /** From the URL (?step=2), so the browser's Back goes to the previous screen. */
+  step: PlanStep
 }
 
-export function PlanQuestionsFlow() {
+export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [currentScreen, setCurrentScreen] = useState<'questions' | 'review' | 'start-day'>(
-    'questions',
-  )
-  const [typedAnswers, setTypedAnswers] = useState<PlanAnswersText>({})
-  const [extractedAnswers, setExtractedAnswers] = useState<PlanAnswers>(EMPTY_PLAN_ANSWERS)
+  const { typedAnswers, extractedAnswers, updateDraft } = usePlanDraft()
+  const [today] = useState(() => new Date())
+
+  function goToStep(nextStep: PlanStep) {
+    void navigate({ to: ROUTES.planQuestions, search: { step: nextStep } })
+  }
 
   const extractAnswersMutation = useMutation({
     mutationFn: (text: string) => extractPlanAnswers(text),
     onSuccess: (answers) => {
-      setExtractedAnswers(answers)
-      setCurrentScreen('review')
+      updateDraft({ extractedAnswers: answers })
+      goToStep('review')
     },
   })
 
-  const [today] = useState(() => new Date())
-
   const saveAnswersMutation = useMutation({
-    mutationFn: (startDate: string) => savePlanAnswers(startDate, extractedAnswers),
+    mutationFn: ({ startDate, answers }: { startDate: string; answers: PlanAnswers }) =>
+      savePlanAnswers(startDate, answers),
     onSuccess: async ({ weekStart }) => {
       // The cached plan still has the old suggestions: load it again with the new answers.
       await queryClient.invalidateQueries({ queryKey: queryKeys.plan(weekStart) })
@@ -56,24 +51,38 @@ export function PlanQuestionsFlow() {
   })
 
   // Only to show the matched dish by its real name; the weekly plan loads the same query.
-  const mealsQuery = useQuery({
-    ...mealsQueryOptions,
-    enabled: extractedAnswers.mustHaveMealId !== null,
-  })
-  const mustHaveMealName = mealsQuery.data?.find(
-    (meal) => meal.id === extractedAnswers.mustHaveMealId,
-  )?.name
+  const mustHaveMealId = extractedAnswers?.mustHaveMealId ?? null
+  const mealsQuery = useQuery({ ...mealsQueryOptions, enabled: mustHaveMealId !== null })
+  const mustHaveMealName = mealsQuery.data?.find((meal) => meal.id === mustHaveMealId)?.name
+
+  function handleQuestionChange(questionIndex: number, answers: PlanAnswersText) {
+    updateDraft({ typedAnswers: answers })
+    goToStep(questionIndex + 1)
+  }
 
   function handleQuestionsDone(answers: PlanAnswersText) {
-    setTypedAnswers(answers)
     const answersAsText = answersToText(answers)
     // Nothing typed at all: nothing for the AI to read, so no call (and no cost).
     if (!answersAsText) {
-      setExtractedAnswers(EMPTY_PLAN_ANSWERS)
-      setCurrentScreen('review')
+      updateDraft({ typedAnswers: answers, extractedAnswers: EMPTY_PLAN_ANSWERS })
+      goToStep('review')
       return
     }
+    updateDraft({ typedAnswers: answers })
     extractAnswersMutation.mutate(answersAsText)
+  }
+
+  function handleRetry() {
+    extractAnswersMutation.mutate(answersToText(typedAnswers))
+  }
+
+  function handleStartDayBack() {
+    saveAnswersMutation.reset()
+    goToStep('review')
+  }
+
+  function handleStartDayConfirm(startDate: string, answers: PlanAnswers) {
+    saveAnswersMutation.mutate({ startDate, answers })
   }
 
   if (extractAnswersMutation.isPending) {
@@ -86,43 +95,22 @@ export function PlanQuestionsFlow() {
 
   if (extractAnswersMutation.isError) {
     return (
-      <div className="space-y-4 card">
-        <FormError message="We couldn't read your answers. Please try again." />
-        <div className="flex flex-wrap justify-between gap-2">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => {
-              extractAnswersMutation.reset()
-              setCurrentScreen('questions')
-            }}
-          >
-            Change my answers
-          </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => extractAnswersMutation.mutate(answersToText(typedAnswers))}
-          >
-            Try again
-          </button>
-        </div>
-      </div>
+      <ExtractErrorScreen onEdit={() => extractAnswersMutation.reset()} onRetry={handleRetry} />
     )
   }
 
-  if (currentScreen === 'review') {
+  if (step === 'review' && extractedAnswers) {
     return (
       <PlanReview
         answers={extractedAnswers}
         mustHaveMealName={mustHaveMealName}
-        onEdit={() => setCurrentScreen('questions')}
-        onConfirm={() => setCurrentScreen('start-day')}
+        onEdit={() => goToStep(1)}
+        onConfirm={() => goToStep('start-day')}
       />
     )
   }
 
-  if (currentScreen === 'start-day') {
+  if (step === 'start-day' && extractedAnswers) {
     return (
       <StartDayScreen
         today={today}
@@ -130,14 +118,18 @@ export function PlanQuestionsFlow() {
         saveError={
           saveAnswersMutation.isError ? "We couldn't save your plan. Please try again." : undefined
         }
-        onBack={() => {
-          saveAnswersMutation.reset()
-          setCurrentScreen('review')
-        }}
-        onConfirm={(startDate) => saveAnswersMutation.mutate(startDate)}
+        onBack={handleStartDayBack}
+        onConfirm={(startDate) => handleStartDayConfirm(startDate, extractedAnswers)}
       />
     )
   }
 
-  return <PlanWizard initialAnswers={typedAnswers} onDone={handleQuestionsDone} />
+  return (
+    <PlanWizard
+      questionIndex={questionIndexOf(step)}
+      initialAnswers={typedAnswers}
+      onQuestionChange={handleQuestionChange}
+      onDone={handleQuestionsDone}
+    />
+  )
 }

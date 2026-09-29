@@ -1,12 +1,14 @@
-import { MEALS, toSlotId, type Day, type WeekPlan } from '@shared/week-plan/week-plan'
+import { MEAL_TYPES, type Meal } from '@shared/meal/meal'
+import { toSlotId, type Day, type PlanSlots } from '@shared/week-plan/week-plan'
 import { MealSlot } from '@/components/weekly-plan/meal-slot/meal-slot'
 
 type DaySectionProps = {
   day: Day
-  plan: WeekPlan
+  slots: PlanSlots
+  mealsById: Map<string, Meal>
 }
 
-export function DaySection({ day, plan }: DaySectionProps) {
+export function DaySection({ day, slots, mealsById }: DaySectionProps) {
   const headingId = `day-section-${day.toLowerCase()}`
 
   return (
@@ -16,9 +18,17 @@ export function DaySection({ day, plan }: DaySectionProps) {
       </h2>
 
       <div className="grid gap-3 md:grid-cols-3">
-        {MEALS.map((meal) => {
-          const slotId = toSlotId(day, meal)
-          return <MealSlot key={meal} id={slotId} meal={meal} food={plan[slotId]} />
+        {MEAL_TYPES.map((mealType) => {
+          const slotId = toSlotId(day, mealType)
+          const mealId = slots[slotId]
+          return (
+            <MealSlot
+              key={mealType}
+              id={slotId}
+              mealType={mealType}
+              meal={mealId ? mealsById.get(mealId) : undefined}
+            />
+          )
         })}
       </div>
     </section>
