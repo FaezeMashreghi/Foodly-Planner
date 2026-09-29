@@ -31,6 +31,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 function send(path: string, init: RequestInit, token: string) {
   const headers = new Headers(init.headers)
   headers.set('authorization', `Bearer ${token}`)
+  if (init.body) headers.set('content-type', 'application/json')
 
   return fetch(`${import.meta.env.VITE_API_URL}${path}`, { ...init, headers })
 }

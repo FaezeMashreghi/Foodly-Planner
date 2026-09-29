@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { signOut } from '@/api/auth/session'
 import { AppLogo } from '@/components/ui/app-logo/app-logo'
-import { ROUTES ,NAV_LINKS} from '@/lib/routes'
+import { ROUTES, NAV_LINKS } from '@/lib/routes'
 
 export function AppHeader() {
   return (

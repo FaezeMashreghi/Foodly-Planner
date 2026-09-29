@@ -8,6 +8,7 @@ import { useForm } from '@/hooks/use-form'
 import { FormError } from '@/components/ui/form-error/form-error'
 import { PasswordField } from '@/components/ui/password-field/password-field'
 import { TextField } from '@/components/ui/text-field/text-field'
+import { ROUTES } from '@/lib/routes'
 
 export function ResetPasswordForm({ email }: { email: string }) {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ export function ResetPasswordForm({ email }: { email: string }) {
       setFormError(undefined)
       try {
         await confirmForgotPassword(email, code.replace(/\s/g, ''), password)
-        await navigate({ to: '/sign-in', search: { notice: 'password-reset' } })
+        await navigate({ to: ROUTES.signIn, search: { notice: 'password-reset' } })
       } catch (error) {
         setFormError(getAuthErrorMessage(error))
       }

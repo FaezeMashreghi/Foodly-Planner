@@ -8,6 +8,7 @@ import { useForm } from '@/hooks/use-form'
 import { FormError } from '@/components/ui/form-error/form-error'
 import { PasswordField } from '@/components/ui/password-field/password-field'
 import { TextField } from '@/components/ui/text-field/text-field'
+import { ROUTES } from '@/lib/routes'
 
 export function SignInForm() {
   const navigate = useNavigate()
@@ -23,7 +24,7 @@ export function SignInForm() {
         await signIn(email, password)
       } catch (error) {
         if (isAuthError(error, AuthErrorName.UserNotConfirmed)) {
-          await navigate({ to: '/confirm-email', search: { email: email.trim() } })
+          await navigate({ to: ROUTES.confirmEmail, search: { email: email.trim() } })
           return
         }
         setFormError(getAuthErrorMessage(error))
@@ -51,7 +52,7 @@ export function SignInForm() {
           required
           {...form.field('password')}
         />
-        <Link to="/forgot-password" className="text-sm link">
+        <Link to={ROUTES.forgotPassword} className="text-sm link">
           Forgot your password?
         </Link>
       </div>

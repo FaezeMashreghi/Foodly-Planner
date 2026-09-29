@@ -33,6 +33,17 @@ describe('apiFetch', () => {
     expect(new Headers(init.headers).get('authorization')).toBe('Bearer access-1')
   })
 
+  it('sends a JSON body with its content type', async () => {
+    session.getAccessToken.mockResolvedValue('access-1')
+    fetchMock.mockResolvedValue(jsonResponse(200, {}))
+
+    await apiFetch('/plan', { method: 'PUT', body: JSON.stringify({ a: 1 }) })
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init.method).toBe('PUT')
+    expect(new Headers(init.headers).get('content-type')).toBe('application/json')
+  })
+
   it('refreshes the token once and retries when the API answers 401', async () => {
     session.getAccessToken.mockResolvedValue('old-token')
     session.refreshAccessToken.mockResolvedValue('new-token')
