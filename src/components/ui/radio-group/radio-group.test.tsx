@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { expectNoAxeViolations } from '@/test/axe'
 import { RadioGroup } from './radio-group'
 
 const options = [
@@ -52,5 +53,10 @@ describe('RadioGroup', () => {
 
     expect(screen.getByRole('radio', { name: 'Coffee' })).toHaveFocus()
     expect(screen.getByRole('radio', { name: 'Coffee' })).toBeChecked()
+  })
+
+  it('has no accessibility problems found by axe', async () => {
+    const { container } = render(<Drink />)
+    await expectNoAxeViolations(container)
   })
 })

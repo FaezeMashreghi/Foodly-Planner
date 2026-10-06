@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Recipe } from '@shared/meal/meal'
+import { expectNoAxeViolations } from '@/test/axe'
 import { MealRecipe } from './meal-recipe'
 
 const client = vi.hoisted(() => ({ apiFetch: vi.fn() }))
@@ -71,5 +72,14 @@ describe('MealRecipe', () => {
 
     await user.click(screen.getByRole('button', { name: 'Get recipe' }))
     expect(await screen.findByRole('heading', { name: 'Recipe' })).toBeInTheDocument()
+  })
+
+  it('has no accessibility problems found by axe with a recipe shown', async () => {
+    client.apiFetch.mockResolvedValue(recipe)
+    const user = userEvent.setup()
+    const { container } = renderRecipe()
+    await user.click(screen.getByRole('button', { name: 'Get recipe' }))
+    await screen.findByText('Fry the herbs.')
+    await expectNoAxeViolations(container)
   })
 })

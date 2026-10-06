@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { expectNoAxeViolations } from '@/test/axe'
 import { ExtractErrorScreen } from './extract-error-screen'
 
 describe('ExtractErrorScreen', () => {
@@ -20,5 +21,12 @@ describe('ExtractErrorScreen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent("You've reached today's limit")
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Change my answers' })).toBeInTheDocument()
+  })
+
+  it('has no accessibility problems found by axe', async () => {
+    const { container } = render(
+      <ExtractErrorScreen dailyLimitReached={false} onEdit={vi.fn()} onRetry={vi.fn()} />,
+    )
+    await expectNoAxeViolations(container)
   })
 })

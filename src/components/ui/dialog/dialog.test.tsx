@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { expectNoAxeViolations } from '@/test/axe'
 import { Dialog } from './dialog'
 
 function Example() {
@@ -40,5 +41,13 @@ describe('Dialog', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('has no accessibility problems found by axe when open', async () => {
+    const user = userEvent.setup()
+    const { baseElement } = render(<Example />)
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    // The dialog is portaled to <body>, outside the render container.
+    await expectNoAxeViolations(baseElement)
   })
 })

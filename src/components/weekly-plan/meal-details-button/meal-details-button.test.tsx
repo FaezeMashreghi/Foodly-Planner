@@ -3,6 +3,7 @@ import { render as renderUi, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { Meal } from '@shared/meal/meal'
+import { expectNoAxeViolations } from '@/test/axe'
 import { MealDetailsButton } from './meal-details-button'
 
 const meal: Meal = {
@@ -53,5 +54,13 @@ describe('MealDetailsButton', () => {
       'https://www.youtube.com/results?search_query=Ghormeh%20sabzi%20recipe',
     )
     expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('has no accessibility problems found by axe when open', async () => {
+    const user = userEvent.setup()
+    const { baseElement } = render(<MealDetailsButton meal={meal} />)
+    await user.click(screen.getByRole('button', { name: 'Recipe for Ghormeh sabzi' }))
+    // The dialog is portaled to <body>, outside the render container.
+    await expectNoAxeViolations(baseElement)
   })
 })

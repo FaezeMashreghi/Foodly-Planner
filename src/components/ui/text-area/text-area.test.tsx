@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { expectNoAxeViolations } from '@/test/axe'
 import { TextArea } from './text-area'
 
 describe('TextArea', () => {
@@ -37,5 +38,12 @@ describe('TextArea', () => {
 
     await user.type(screen.getByRole('textbox', { name: 'Your answer' }), 'spinach')
     expect(screen.getByText('7 / 450')).toBeInTheDocument()
+  })
+
+  it('has no accessibility problems found by axe', async () => {
+    const { container } = render(
+      <TextArea label="Your answer" hint="A few words" error="Too long" maxLength={450} />,
+    )
+    await expectNoAxeViolations(container)
   })
 })

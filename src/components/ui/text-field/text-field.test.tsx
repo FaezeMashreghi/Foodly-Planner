@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { expectNoAxeViolations } from '@/test/axe'
 import { TextField } from './text-field'
 
 describe('TextField', () => {
@@ -28,5 +29,12 @@ describe('TextField', () => {
     render(<TextField label="Email" />)
     await user.type(screen.getByLabelText('Email'), 'faeze@example.com')
     expect(screen.getByLabelText('Email')).toHaveValue('faeze@example.com')
+  })
+
+  it('has no accessibility problems found by axe', async () => {
+    const { container } = render(
+      <TextField label="Email" hint="We'll send a code" error="Enter a valid email address" />,
+    )
+    await expectNoAxeViolations(container)
   })
 })
