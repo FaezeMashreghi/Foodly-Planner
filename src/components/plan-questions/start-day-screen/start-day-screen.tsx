@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { nextSevenDays } from '@shared/week-plan/week-plan'
 import { FormError } from '@/components/ui/form-error/form-error'
 import { RadioGroup } from '@/components/ui/radio-group/radio-group'
+import { useFocusOnMount } from '@/hooks/use-focus-on-mount'
 import { describeStartDay } from './start-day-label'
 
 type StartDayScreenProps = {
@@ -21,11 +22,11 @@ export function StartDayScreen({
 }: StartDayScreenProps) {
   const startDays = nextSevenDays(today)
   const [startDate, setStartDate] = useState(startDays[0])
-  const headingRef = useRef<HTMLHeadingElement>(null)
+  const headingRef = useFocusOnMount<HTMLHeadingElement>()
 
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [])
+  function handleBack() {
+    if (!isSaving) onBack()
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -56,7 +57,7 @@ export function StartDayScreen({
           type="button"
           className="btn-secondary"
           aria-disabled={isSaving}
-          onClick={() => !isSaving && onBack()}
+          onClick={handleBack}
         >
           Back
         </button>

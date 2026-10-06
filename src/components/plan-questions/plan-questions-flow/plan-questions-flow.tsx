@@ -44,8 +44,8 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
     mutationFn: ({ startDate, answers }: { startDate: string; answers: PlanAnswers }) =>
       savePlanAnswers(startDate, answers),
     onSuccess: async ({ weekStart }) => {
-      // The cached plan still has the old suggestions: load it again with the new answers.
-      await queryClient.invalidateQueries({ queryKey: queryKeys.plan(weekStart) })
+      // Cached suggestions were scored from the old answers.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planSuggestions(weekStart) })
       await navigate({ to: ROUTES.weeklyPlan, search: { start: weekStart } })
     },
   })
