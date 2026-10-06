@@ -5,6 +5,8 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import '@fontsource-variable/nunito'
 import './index.css'
 import { getAccessToken, getUser, subscribe } from '@/api/auth/session'
+import { PageError } from '@/components/layout/page-error/page-error'
+import { PagePending } from '@/components/layout/page-pending/page-pending'
 import { routeTree } from './routeTree.gen'
 
 const queryClient = new QueryClient()
@@ -12,6 +14,8 @@ const queryClient = new QueryClient()
 const router = createRouter({
   routeTree,
   context: { auth: { getUser, getAccessToken }, queryClient },
+  defaultErrorComponent: PageError,
+  defaultPendingComponent: PagePending,
 })
 
 // When the user signs in or out (or the session expires): drop the previous user's data,

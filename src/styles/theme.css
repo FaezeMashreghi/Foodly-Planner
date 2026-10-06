@@ -37,4 +37,23 @@
   --radius-card: 0.75rem;
 
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.1);
+
+  /* Step-by-step questions: the next step slides in from the right, going back from the left.
+     Turned off under prefers-reduced-motion (base.css). */
+  --animate-slide-in-next: slide-in-next 250ms ease-out;
+  --animate-slide-in-back: slide-in-back 250ms ease-out;
+
+  @keyframes slide-in-next {
+    from {
+      opacity: 0;
+      transform: translateX(2rem);
+    }
+  }
+
+  @keyframes slide-in-back {
+    from {
+      opacity: 0;
+      transform: translateX(-2rem);
+    }
+  }
 }

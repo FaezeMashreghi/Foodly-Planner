@@ -1,65 +1,65 @@
-import { DragDropProvider, DragOverlay } from '@dnd-kit/react'
-import { useState } from 'react'
-import { isSlotId, setSlotFood, type SlotId, type WeekPlan } from '@shared/week-plan/week-plan'
-import { FoodCard } from '@/components/ui/food-card/food-card'
+import { DragDropProvider, DragOverlay, type DragEndEvent } from '@dnd-kit/react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { daysFrom, isSlotId } from '@shared/week-plan/week-plan'
+import { mealsQueryOptions } from '@/api/foodly/meals'
+import { planQueryOptions, planSuggestionsQueryOptions } from '@/api/foodly/plan'
+import { MealCard } from '@/components/weekly-plan/meal-card/meal-card'
 import { SuggestionList } from '@/components/weekly-plan/suggestion-list/suggestion-list'
 import { WeekGrid } from '@/components/weekly-plan/week-grid/week-grid'
-import { MOCK_FOODS } from './mock-foods'
+import { placeMeal } from './place-meal'
+import { useSavePlanSlots } from '@/hooks/use-save-plan-slots'
 
-function findFood(id: unknown) {
-  return MOCK_FOODS.find((food) => food.id === id)
-}
-
-export function WeekPlanner() {
-  const [plan, setPlan] = useState<WeekPlan>({})
+export function WeekPlanner({ weekStart }: { weekStart: string }) {
+  const { data: meals } = useSuspenseQuery(mealsQueryOptions)
+  const { data: plan } = useSuspenseQuery(planQueryOptions(weekStart))
+  const { data: suggestions } = useSuspenseQuery(planSuggestionsQueryOptions(weekStart))
+  const mealsById = useMemo(() => new Map(meals.map((meal) => [meal.id, meal])), [meals])
+  const days = daysFrom(weekStart)
   const [message, setMessage] = useState('')
 
-  function placeFood(slotId: SlotId, foodId: unknown) {
-    const food = findFood(foodId)
-    if (!food) return
+  const save = useSavePlanSlots(weekStart, showSaveError)
 
-    const previous = plan[slotId]
-    const nextPlan = setSlotFood(plan, slotId, food)
-    if (nextPlan === plan) {
-      setMessage(`${food.title} is already in ${slotId}`)
-      return
-    }
-    setPlan(nextPlan)
-    setMessage(
-      previous
-        ? `Replaced ${previous.title} with ${food.title} in ${slotId}`
-        : `Added ${food.title} to ${slotId}`,
-    )
+  function showSaveError() {
+    setMessage("Couldn't save your week. Please try again.")
+  }
+
+  function findMeal(id: unknown) {
+    return typeof id === 'string' ? mealsById.get(id) : undefined
+  }
+
+  function handleDragEnd({ operation, canceled }: DragEndEvent) {
+    const { source, target } = operation
+    if (canceled || !source || !target || !isSlotId(target.id)) return
+    const meal = findMeal(source.id)
+    if (!meal) return
+
+    const result = placeMeal(plan.slots, target.id, meal, mealsById)
+    if (result.slots !== plan.slots) save.mutate({ weekStart, slots: result.slots })
+    setMessage(result.message)
+  }
+
+  function renderDragOverlay(source: { id: unknown }) {
+    const meal = findMeal(source.id)
+    return meal ? <MealCard meal={meal} showMealTypes /> : null
   }
 
   return (
-    <DragDropProvider
-      onDragEnd={({ operation, canceled }) => {
-        const { source, target } = operation
-        if (canceled || !source || !target || !isSlotId(target.id)) return
-        placeFood(target.id, source.id)
-      }}
-    >
+    <DragDropProvider onDragEnd={handleDragEnd}>
       <p role="status" className="min-h-6 text-sm text-ink-muted">
         {message}
       </p>
 
       <div className="mt-2 grid gap-6 lg:grid-cols-4">
-        <WeekGrid plan={plan} className="lg:col-span-3" />
+        <WeekGrid days={days} slots={plan.slots} mealsById={mealsById} className="lg:col-span-3" />
         <SuggestionList
-          foods={MOCK_FOODS}
+          suggestions={suggestions}
+          mealsById={mealsById}
           className="max-h-96 lg:sticky lg:top-4 lg:max-h-screen lg:self-start"
         />
       </div>
 
-      <DragOverlay dropAnimation={null}>
-        {(source) => {
-          const food = findFood(source.id)
-          return food ? (
-            <FoodCard title={food.title} description={food.description} imageUrl={food.imageUrl} />
-          ) : null
-        }}
-      </DragOverlay>
+      <DragOverlay dropAnimation={null}>{renderDragOverlay}</DragOverlay>
     </DragDropProvider>
   )
 }
