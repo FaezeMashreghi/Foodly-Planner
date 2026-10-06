@@ -1,9 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { ROUTES } from '@/lib/routes'
 
 export const Route = createFileRoute('/_authenticated/')({
-  component: WeeklyPlanPage,
+  beforeLoad: () => {
+    throw redirect({ to: ROUTES.weeklyPlan, replace: true })
+  },
 })
-
-function WeeklyPlanPage() {
-  return <h1 className="text-title">Your week</h1>
-}

@@ -114,6 +114,22 @@ describe('getAccessToken', () => {
   })
 })
 
+describe('refreshAccessToken', () => {
+  it('refreshes even when the current token has not expired', async () => {
+    cognito.refreshTokens.mockResolvedValue(fakeTokens(HOUR, { accessToken: 'access-2' }))
+    const session = await loadSession(fakeTokens(HOUR))
+
+    expect(await session.refreshAccessToken()).toBe('access-2')
+    expect(cognito.refreshTokens).toHaveBeenCalledWith('refresh-1')
+  })
+
+  it('returns null when nobody is signed in', async () => {
+    const session = await loadSession()
+    expect(await session.refreshAccessToken()).toBeNull()
+    expect(cognito.refreshTokens).not.toHaveBeenCalled()
+  })
+})
+
 describe('signOut', () => {
   it('clears the session even if revoking the token fails', async () => {
     cognito.signOut.mockRejectedValue(new Error('Network error'))

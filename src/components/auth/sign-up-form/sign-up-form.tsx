@@ -8,6 +8,7 @@ import { useForm } from '@/hooks/use-form'
 import { FormError } from '@/components/ui/form-error/form-error'
 import { PasswordField } from '@/components/ui/password-field/password-field'
 import { TextField } from '@/components/ui/text-field/text-field'
+import { ROUTES } from '@/lib/routes'
 
 export function SignUpForm() {
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ export function SignUpForm() {
       setFormError(undefined)
       try {
         await signUp(email.trim(), password)
-        await navigate({ to: '/confirm-email', search: { email: email.trim() } })
+        await navigate({ to: ROUTES.confirmEmail, search: { email: email.trim() } })
       } catch (error) {
         setFormError(getAuthErrorMessage(error))
       }

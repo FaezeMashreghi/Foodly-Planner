@@ -6,6 +6,7 @@ import { getAuthErrorMessage } from '@/api/auth/errors'
 import { useForm } from '@/hooks/use-form'
 import { FormError } from '@/components/ui/form-error/form-error'
 import { TextField } from '@/components/ui/text-field/text-field'
+import { ROUTES } from '@/lib/routes'
 
 export function RequestResetForm() {
   const navigate = useNavigate()
@@ -18,7 +19,7 @@ export function RequestResetForm() {
       setFormError(undefined)
       try {
         await forgotPassword(email.trim())
-        await navigate({ to: '/forgot-password', search: { email: email.trim() } })
+        await navigate({ to: ROUTES.forgotPassword, search: { email: email.trim() } })
       } catch (error) {
         setFormError(getAuthErrorMessage(error))
       }
