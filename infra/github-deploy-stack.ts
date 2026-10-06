@@ -8,6 +8,9 @@ import {
 } from 'aws-cdk-lib/aws-iam'
 
 const GITHUB_REPO = 'FaezeMashreghi/Foodly-Planner'
+// The token's `sub` names the owner and repo as name@id. The ids never change, so a repo deleted
+// and created again under the same name can't use the role.
+const GITHUB_REPO_WITH_IDS = 'FaezeMashreghi@148049552/Foodly-Planner@1382956632'
 const GITHUB_ENVIRONMENT = 'production'
 // Roles made by `cdk bootstrap` ("hnb659fds" is its default qualifier). No image publishing: no Docker.
 const CDK_BOOTSTRAP_ROLES = ['deploy-role', 'file-publishing-role', 'lookup-role']
@@ -28,7 +31,7 @@ export class GithubDeployStack extends Stack {
       assumedBy: new OpenIdConnectPrincipal(githubProvider, {
         StringEquals: {
           'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-          'token.actions.githubusercontent.com:sub': `repo:${GITHUB_REPO}:environment:${GITHUB_ENVIRONMENT}`,
+          'token.actions.githubusercontent.com:sub': `repo:${GITHUB_REPO_WITH_IDS}:environment:${GITHUB_ENVIRONMENT}`,
         },
       }),
     })
