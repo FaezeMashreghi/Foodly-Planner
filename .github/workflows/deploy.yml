@@ -1,0 +1,53 @@
+# Deploys every push to main, after the same checks a pull request gets (ci.yml).
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# No permissions by default; each job asks for only what it needs.
+permissions: {}
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # One deploy at a time. A newer one waits instead: stopping CloudFormation halfway can leave the
+    # stack stuck.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    # Its protection rules (main only) and AWS_DEPLOY_ROLE_ARN; the AWS role trusts only this name.
+    environment: production
+    permissions:
+      contents: read
+      # Lets the job ask GitHub for an OIDC token to sign in to AWS.
+      id-token: write
+    steps:
+      # Third-party code with AWS access: pinned to a commit, since a tag can be moved.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      # No one is there to answer CDK's "Do you wish to deploy these changes?". IAM changes are
+      # reviewed in the pull request instead.
+      - name: CDK deploy
+        run: npx cdk deploy FoodlyStack --require-approval never

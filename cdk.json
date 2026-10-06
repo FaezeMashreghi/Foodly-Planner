@@ -1,6 +1,5 @@
 {
   "app": "npx tsx infra/app.ts",
-  "profile": "foodly",
   "context": {
     "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
     "@aws-cdk/aws-apigateway:authorizerChangeDeploymentLogicalId": true,
