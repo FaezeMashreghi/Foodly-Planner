@@ -1,10 +1,10 @@
-# Checks every pull request and every push to main. No AWS access: nothing is deployed here.
+# Checks every pull request, and every push to main through deploy.yml (which calls this file
+# before deploying). No AWS access: nothing is deployed here.
 name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_call:
 
 # Read the code, nothing else (the default token can also write to the repo).
 permissions:
