@@ -1,4 +1,7 @@
 import { useId, type ComponentProps, type ReactNode } from 'react'
+import { Field } from '@/components/ui/field/field'
+import { fieldIds } from '@/components/ui/field/field-ids'
+import type { LabelSize } from '@/components/ui/field/label-sizes'
 
 export type TextFieldProps = Omit<ComponentProps<'input'>, 'id'> & {
   /** Visible label. Required: every input needs one. */
@@ -9,6 +12,8 @@ export type TextFieldProps = Omit<ComponentProps<'input'>, 'id'> & {
   error?: string
   /** A control shown inside the input on the right, e.g. a "Show" button. */
   action?: ReactNode
+  /** `large` when the label is the question of the page, e.g. one question per step. */
+  labelSize?: LabelSize
 }
 
 /**
@@ -21,41 +26,39 @@ export function TextField({
   hint,
   error,
   action,
+  labelSize,
   className,
   'aria-describedby': describedByProp,
   ...inputProps
 }: TextFieldProps) {
   const id = useId()
-  const hintId = `${id}-hint`
-  const errorId = `${id}-error`
-  const describedBy =
-    [describedByProp, hint && hintId, error && errorId].filter(Boolean).join(' ') || undefined
+  const { hintId, errorId, describedBy } = fieldIds(id, {
+    hint,
+    error,
+    describedBy: describedByProp,
+  })
 
   return (
-    <div className={className ? `space-y-1 ${className}` : 'space-y-1'}>
-      <label htmlFor={id} className="block text-sm font-medium text-ink">
-        {label}
-      </label>
-      {hint && (
-        <p id={hintId} className="text-sm text-ink-muted">
-          {hint}
-        </p>
-      )}
+    <Field
+      id={id}
+      label={label}
+      labelSize={labelSize}
+      hint={hint}
+      hintId={hintId}
+      error={error}
+      errorId={errorId}
+      className={className}
+    >
       <div className="relative">
         <input
           {...inputProps}
           id={id}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={`block min-h-11 w-full rounded-control border border-line-strong bg-surface px-3 py-2 text-ink placeholder:text-ink-muted aria-invalid:border-danger ${action ? 'pr-20' : ''}`}
+          className={`block min-h-11 w-full rounded-control border border-line-strong bg-surface px-3 py-2 text-ink placeholder:text-ink-muted focus-visible:-outline-offset-1 aria-invalid:border-danger ${action ? 'pr-20' : ''}`}
         />
         {action && <div className="absolute inset-y-0 right-0 flex items-center">{action}</div>}
       </div>
-      {error && (
-        <p id={errorId} className="text-sm text-danger">
-          <span className="sr-only">Error:</span> {error}
-        </p>
-      )}
-    </div>
+    </Field>
   )
 }

@@ -6,12 +6,13 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react(), tailwindcss()],
+  resolve: { tsconfigPaths: true },
   test: {
     projects: [
       {
         // Plain functions (validation rules, form logic): no browser needed.
         extends: true,
-        test: { name: 'unit', environment: 'node', include: ['{src,shared}/**/*.test.ts'] },
+        test: { name: 'unit', environment: 'node', include: ['{src,shared,server}/**/*.test.ts'] },
       },
       {
         // React components: jsdom gives them a fake browser page to render into.

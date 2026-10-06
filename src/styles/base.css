@@ -12,6 +12,11 @@
     @apply outline-2 outline-offset-2 outline-focus;
   }
 
+  /* No page scrolling behind an open modal <dialog>. */
+  html:has(dialog[open]:modal) {
+    overflow: hidden;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
