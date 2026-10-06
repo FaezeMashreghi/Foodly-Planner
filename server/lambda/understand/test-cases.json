@@ -1,0 +1,242 @@
+[
+  {
+    "name": "spec example: light, persian with rice and meat, quick weekdays",
+    "input": "Ingredients going off soon: spinach and a few tomatoes, half a pot of yogurt\nFood I feel like: something light, some persian with rice and meet,some thing like macaroni,\nCooking effort: quick on weekdays, I have more time on Sunday\nA dish I really want: ghormeh sabzi",
+    "expected": {
+      "expiring": ["spinach", "tomato", "yogurt"],
+      "wantMore": [
+        "salad-mix",
+        "lettuce",
+        "cucumber",
+        "chicken-breast",
+        "beef-mince",
+        "beef-steak",
+        "beef-stew-meat",
+        "lamb-mince",
+        "lamb-stew-meat",
+        "sucuk",
+        "basmati-rice",
+        "jasmine-rice",
+        "macaroni"
+      ],
+      "avoid": [],
+      "cuisines": ["persian"],
+      "easyOnly": true,
+      "maxPrepMinutes": 30,
+      "mustHaveMealId": "ghormeh-sabzi",
+      "mustHaveText": "ghormeh sabzi",
+      "notes": ["More time on Sunday."]
+    }
+  },
+  {
+    "name": "real answers: persian mostly, protein, healthy, rice for lunch",
+    "input": "Food I feel like: persian mostly,but protein and healthy meal ,some thing with rice is also my fave for lunch\nCooking effort: 30 min on weekday but more on sunday",
+    "expected": {
+      "expiring": [],
+      "wantMore": [
+        "chicken-breast",
+        "egg",
+        "greek-yogurt",
+        "red-lentil",
+        "chickpea",
+        "salad-mix",
+        "lettuce",
+        "cucumber",
+        "tomato",
+        "basmati-rice",
+        "jasmine-rice"
+      ],
+      "avoid": [],
+      "cuisines": ["persian"],
+      "easyOnly": false,
+      "maxPrepMinutes": 30,
+      "mustHaveMealId": null,
+      "mustHaveText": null,
+      "notes": ["Rice is a favourite for lunch.", "More time on Sunday."]
+    }
+  },
+  {
+    "name": "typos and casual",
+    "input": "Ingredients going off soon: brocoli, chiken thighs (2), some mushrooms n a courgete\nFood I feel like: asain stir fry kinda stuff\nCooking effort: lazy lol\nA dish I really want: chiken chowmein",
+    "expected": {
+      "expiring": ["broccoli", "chicken-thigh", "mushroom", "courgette"],
+      "wantMore": [],
+      "avoid": [],
+      "cuisines": ["asian"],
+      "easyOnly": true,
+      "maxPrepMinutes": 30,
+      "mustHaveMealId": "chicken-chow-mein",
+      "mustHaveText": "chiken chowmein",
+      "notes": []
+    }
+  },
+  {
+    "name": "mixed persian-english",
+    "input": "Ingredients going off soon: جعفری and kashk, 3 ta bademjoon\nFood I feel like: ye chizi irani, ba berenj\nCooking effort: vaght nadaram, max 20 daghighe\nA dish I really want: کشک بادمجون",
+    "expected": {
+      "expiring": ["parsley", "kashk", "aubergine"],
+      "wantMore": ["basmati-rice", "jasmine-rice"],
+      "avoid": [],
+      "cuisines": ["persian"],
+      "easyOnly": true,
+      "maxPrepMinutes": 20,
+      "mustHaveMealId": "kashk-e-bademjan",
+      "mustHaveText": "کشک بادمجون",
+      "notes": []
+    }
+  },
+  {
+    "name": "nut allergy and no fish",
+    "input": "Ingredients going off soon: carrots, a bag of salad\nFood I feel like: allergic to nuts!! and no fish please. Turkish or Dutch\nCooking effort: normal",
+    "expected": {
+      "expiring": ["carrot", "salad-mix"],
+      "wantMore": [],
+      "avoid": [
+        "almond",
+        "walnut",
+        "peanut-butter",
+        "cod-fillet",
+        "pangasius-fillet",
+        "salmon-fillet",
+        "shrimp",
+        "tinned-tuna"
+      ],
+      "cuisines": ["turkish", "dutch"],
+      "easyOnly": false,
+      "maxPrepMinutes": null,
+      "mustHaveMealId": null,
+      "mustHaveText": null,
+      "notes": []
+    }
+  },
+  {
+    "name": "no meat, lots of veg, time limit",
+    "input": "Ingredients going off soon: chickpeas (open tin), feta\nFood I feel like: no meat this week, trying vegetarian. lots of veg\nCooking effort: under 45 minutes\nA dish I really want: kuku sabzi",
+    "expected": {
+      "expiring": ["chickpea", "feta"],
+      "wantMore": ["broccoli", "spinach", "courgette", "bell-pepper", "carrot", "green-bean"],
+      "avoid": [
+        "beef-mince",
+        "beef-steak",
+        "beef-stew-meat",
+        "chicken-breast",
+        "chicken-thigh",
+        "lamb-mince",
+        "lamb-stew-meat",
+        "sliced-chicken",
+        "sucuk",
+        "turkey-breast",
+        "turkey-ham",
+        "cod-fillet",
+        "pangasius-fillet",
+        "salmon-fillet",
+        "shrimp",
+        "tinned-tuna"
+      ],
+      "cuisines": [],
+      "easyOnly": false,
+      "maxPrepMinutes": 45,
+      "mustHaveMealId": "kuku-sabzi",
+      "mustHaveText": "kuku sabzi",
+      "notes": []
+    }
+  },
+  {
+    "name": "something light only",
+    "input": "Food I feel like: something light, it's been a heavy weekend",
+    "expected": {
+      "expiring": [],
+      "wantMore": ["salad-mix", "lettuce", "cucumber", "tomato", "chicken-breast"],
+      "avoid": [],
+      "cuisines": [],
+      "easyOnly": false,
+      "maxPrepMinutes": null,
+      "mustHaveMealId": null,
+      "mustHaveText": null,
+      "notes": []
+    }
+  },
+  {
+    "name": "italian (not a cuisine) and a dish not in the catalogue",
+    "input": "Food I feel like: italian!! pasta and a bit of asian\nCooking effort: I enjoy cooking, no rush\nA dish I really want: lasagne",
+    "expected": {
+      "expiring": [],
+      "wantMore": ["spaghetti", "macaroni"],
+      "avoid": [],
+      "cuisines": ["asian"],
+      "easyOnly": false,
+      "maxPrepMinutes": null,
+      "mustHaveMealId": null,
+      "mustHaveText": "lasagne",
+      "notes": ["Would like Italian food, which isn't one of our cuisines."]
+    }
+  },
+  {
+    "name": "must-have described, not named",
+    "input": "Ingredients going off soon: red lentils (old bag), lemon\nCooking effort: quick, 20 mins\nA dish I really want: that Turkish lentil soup with lemon",
+    "expected": {
+      "expiring": ["red-lentil", "lemon"],
+      "wantMore": [],
+      "avoid": [],
+      "cuisines": [],
+      "easyOnly": true,
+      "maxPrepMinutes": 20,
+      "mustHaveMealId": "mercimek-corbasi",
+      "mustHaveText": "Turkish lentil soup",
+      "notes": []
+    }
+  },
+  {
+    "name": "more chicken, guests, must-have not in catalogue",
+    "input": "Food I feel like: more chicken, dutch comfort food\nCooking effort: weekdays not much time, friday cooking for 6 people\nA dish I really want: stamppot boerenkool",
+    "expected": {
+      "expiring": [],
+      "wantMore": ["chicken-breast", "chicken-thigh", "sliced-chicken"],
+      "avoid": [],
+      "cuisines": ["dutch"],
+      "easyOnly": true,
+      "maxPrepMinutes": 30,
+      "mustHaveMealId": null,
+      "mustHaveText": "stamppot boerenkool",
+      "notes": ["Cooking for 6 people on Friday."]
+    }
+  },
+  {
+    "name": "almost empty",
+    "input": "Food I feel like: idk",
+    "expected": {
+      "expiring": [],
+      "wantMore": [],
+      "avoid": [],
+      "cuisines": [],
+      "easyOnly": false,
+      "maxPrepMinutes": null,
+      "mustHaveMealId": null,
+      "mustHaveText": null,
+      "notes": []
+    }
+  },
+  {
+    "name": "dislikes, less red meat, nothing spicy",
+    "input": "Ingredients going off soon: 4 eggs, half a courgette\nFood I feel like: i hate mushrooms and onions, less red meat, nothing spicy\nCooking effort: easy stuff",
+    "expected": {
+      "expiring": ["egg", "courgette"],
+      "wantMore": [],
+      "avoid": [
+        "mushroom",
+        "onion",
+        "red-onion",
+        "spring-onion",
+        "green-chilli",
+        "chilli-flake",
+        "sriracha"
+      ],
+      "cuisines": [],
+      "easyOnly": true,
+      "maxPrepMinutes": null,
+      "mustHaveMealId": null,
+      "mustHaveText": null,
+      "notes": ["Less red meat."]
+    }
+  }
+]
