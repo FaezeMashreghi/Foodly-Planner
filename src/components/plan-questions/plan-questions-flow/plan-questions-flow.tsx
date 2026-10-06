@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { EMPTY_PLAN_ANSWERS, type PlanAnswers } from '@shared/week-plan/week-plan'
+import { ApiError } from '@/api/foodly/client'
 import { mealsQueryOptions } from '@/api/foodly/meals'
 import { extractPlanAnswers, savePlanAnswers } from '@/api/foodly/plan'
 import { queryKeys } from '@/api/foodly/query-keys'
@@ -44,8 +45,8 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
     mutationFn: ({ startDate, answers }: { startDate: string; answers: PlanAnswers }) =>
       savePlanAnswers(startDate, answers),
     onSuccess: async ({ weekStart }) => {
-      // The cached plan still has the old suggestions: load it again with the new answers.
-      await queryClient.invalidateQueries({ queryKey: queryKeys.plan(weekStart) })
+      // Cached suggestions were scored from the old answers.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planSuggestions(weekStart) })
       await navigate({ to: ROUTES.weeklyPlan, search: { start: weekStart } })
     },
   })
@@ -94,8 +95,13 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
   }
 
   if (extractAnswersMutation.isError) {
+    const { error } = extractAnswersMutation
     return (
-      <ExtractErrorScreen onEdit={() => extractAnswersMutation.reset()} onRetry={handleRetry} />
+      <ExtractErrorScreen
+        dailyLimitReached={error instanceof ApiError && error.code === 'daily-limit'}
+        onEdit={() => extractAnswersMutation.reset()}
+        onRetry={handleRetry}
+      />
     )
   }
 

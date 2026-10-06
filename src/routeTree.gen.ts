@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedPlanQuestionsRouteImport } from './routes/_authenticated/plan-questions'
+import { Route as AuthenticatedWeeklyPlanRouteImport } from './routes/_authenticated/weekly-plan'
 import { Route as GuestConfirmEmailRouteImport } from './routes/_guest/confirm-email'
 import { Route as GuestForgotPasswordRouteImport } from './routes/_guest/forgot-password'
 import { Route as GuestSignInRouteImport } from './routes/_guest/sign-in'
@@ -28,6 +30,17 @@ const GuestRoute = GuestRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPlanQuestionsRoute =
+  AuthenticatedPlanQuestionsRouteImport.update({
+    id: '/plan-questions',
+    path: '/plan-questions',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedWeeklyPlanRoute = AuthenticatedWeeklyPlanRouteImport.update({
+  id: '/weekly-plan',
+  path: '/weekly-plan',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const GuestConfirmEmailRoute = GuestConfirmEmailRouteImport.update({
@@ -53,6 +66,8 @@ const GuestSignUpRoute = GuestSignUpRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/plan-questions': typeof AuthenticatedPlanQuestionsRoute
+  '/weekly-plan': typeof AuthenticatedWeeklyPlanRoute
   '/confirm-email': typeof GuestConfirmEmailRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/sign-in': typeof GuestSignInRoute
@@ -60,6 +75,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
+  '/plan-questions': typeof AuthenticatedPlanQuestionsRoute
+  '/weekly-plan': typeof AuthenticatedWeeklyPlanRoute
   '/confirm-email': typeof GuestConfirmEmailRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/sign-in': typeof GuestSignInRoute
@@ -69,6 +86,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
+  '/_authenticated/plan-questions': typeof AuthenticatedPlanQuestionsRoute
+  '/_authenticated/weekly-plan': typeof AuthenticatedWeeklyPlanRoute
   '/_guest/confirm-email': typeof GuestConfirmEmailRoute
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/sign-in': typeof GuestSignInRoute
@@ -78,13 +97,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/confirm-email' | '/forgot-password' | '/sign-in' | '/sign-up'
+    | '/'
+    | '/plan-questions'
+    | '/weekly-plan'
+    | '/confirm-email'
+    | '/forgot-password'
+    | '/sign-in'
+    | '/sign-up'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/confirm-email' | '/forgot-password' | '/sign-in' | '/sign-up'
+  to:
+    | '/'
+    | '/plan-questions'
+    | '/weekly-plan'
+    | '/confirm-email'
+    | '/forgot-password'
+    | '/sign-in'
+    | '/sign-up'
   id:
     | '__root__'
     | '/_authenticated'
     | '/_guest'
+    | '/_authenticated/plan-questions'
+    | '/_authenticated/weekly-plan'
     | '/_guest/confirm-email'
     | '/_guest/forgot-password'
     | '/_guest/sign-in'
@@ -120,6 +154,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/plan-questions': {
+      id: '/_authenticated/plan-questions'
+      path: '/plan-questions'
+      fullPath: '/plan-questions'
+      preLoaderRoute: typeof AuthenticatedPlanQuestionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/weekly-plan': {
+      id: '/_authenticated/weekly-plan'
+      path: '/weekly-plan'
+      fullPath: '/weekly-plan'
+      preLoaderRoute: typeof AuthenticatedWeeklyPlanRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_guest/confirm-email': {
       id: '/_guest/confirm-email'
       path: '/confirm-email'
@@ -152,10 +200,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedPlanQuestionsRoute: typeof AuthenticatedPlanQuestionsRoute
+  AuthenticatedWeeklyPlanRoute: typeof AuthenticatedWeeklyPlanRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedPlanQuestionsRoute: AuthenticatedPlanQuestionsRoute,
+  AuthenticatedWeeklyPlanRoute: AuthenticatedWeeklyPlanRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

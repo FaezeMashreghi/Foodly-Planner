@@ -1,0 +1,2 @@
+export const MAX_ANSWER_LENGTH = 450
+export const MAX_UNDERSTAND_TEXT_LENGTH = 2000

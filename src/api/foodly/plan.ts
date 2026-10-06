@@ -1,10 +1,15 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { Plan, PlanAnswers, PlanWithSuggestions } from '@shared/week-plan/week-plan'
+import type { Plan, PlanAnswers, PlanSuggestions } from '@shared/week-plan/week-plan'
 import { apiFetch } from './client'
 import { queryKeys } from './query-keys'
 
 export function fetchWeekPlan(weekStart: string) {
-  return apiFetch<PlanWithSuggestions>(`/plan?week=${encodeURIComponent(weekStart)}`)
+  return apiFetch<Plan>(`/plan?week=${encodeURIComponent(weekStart)}`)
+}
+
+/** Meal ids per meal type, best first, scored by the backend from the saved answers. */
+export function fetchPlanSuggestions(weekStart: string) {
+  return apiFetch<PlanSuggestions>(`/plan/suggestions?week=${encodeURIComponent(weekStart)}`)
 }
 
 export function savePlanSlots(plan: Plan) {
@@ -31,5 +36,14 @@ export function planQueryOptions(weekStart: string) {
   return queryOptions({
     queryKey: queryKeys.plan(weekStart),
     queryFn: () => fetchWeekPlan(weekStart),
+  })
+}
+
+/** Suggestions change only when the answers are saved, which invalidates this query. */
+export function planSuggestionsQueryOptions(weekStart: string) {
+  return queryOptions({
+    queryKey: queryKeys.planSuggestions(weekStart),
+    queryFn: () => fetchPlanSuggestions(weekStart),
+    staleTime: Infinity,
   })
 }

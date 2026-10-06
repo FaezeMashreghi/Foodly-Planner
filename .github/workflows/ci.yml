@@ -1,0 +1,53 @@
+# Checks every pull request and every push to main. No AWS access: nothing is deployed here.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Read the code, nothing else (the default token can also write to the repo).
+permissions:
+  contents: read
+
+# A new push to the same branch or PR cancels the run that's still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Installs exactly what package-lock.json says.
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formatting
+        run: npm run format:check
+
+      - name: Type check and build
+        run: npm run build
+
+      - name: Tests
+        run: npm run test:run
+
+      # The axe tests again, on their own, so an accessibility problem shows as its own ✗.
+      # Runs even when Tests failed, to show whether accessibility is broken too.
+      - name: Accessibility (axe)
+        if: ${{ !cancelled() }}
+        run: npx vitest run -t "axe"
+
+      # Builds the CloudFormation template and bundles the Lambda, without deploying.
+      - name: CDK synth
+        run: npx cdk synth --quiet

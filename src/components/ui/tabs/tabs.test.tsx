@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { expectNoAxeViolations } from '@/test/axe'
 import { Tabs, type Tab } from './tabs'
 
 type Fruit = 'apple' | 'banana' | 'cherry'
@@ -72,5 +73,10 @@ describe('Tabs', () => {
     expect(screen.getByRole('tab', { name: 'Cherry' })).toHaveFocus()
     await user.keyboard('{Home}')
     expect(screen.getByRole('tab', { name: 'Apple' })).toHaveFocus()
+  })
+
+  it('has no accessibility problems found by axe', async () => {
+    const { container } = render(<Example />)
+    await expectNoAxeViolations(container)
   })
 })

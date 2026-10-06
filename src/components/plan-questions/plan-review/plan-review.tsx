@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useId } from 'react'
 import { getCuisineName } from '@shared/meal/cuisines'
 import type { PlanAnswers } from '@shared/week-plan/week-plan'
 import { ChipList } from '@/components/ui/chip-list/chip-list'
 import { ReviewTile } from '@/components/plan-questions/review-tile/review-tile'
+import { useFocusOnMount } from '@/hooks/use-focus-on-mount'
 import { describeCookingTime, toIngredientChips } from './review-text'
 
 type PlanReviewProps = {
@@ -13,11 +14,8 @@ type PlanReviewProps = {
 }
 
 export function PlanReview({ answers, mustHaveMealName, onConfirm, onEdit }: PlanReviewProps) {
-  const headingRef = useRef<HTMLHeadingElement>(null)
-
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [])
+  const headingId = useId()
+  const headingRef = useFocusOnMount<HTMLHeadingElement>()
 
   const feelLike = [
     ...answers.cuisines.map((id) => ({ id, label: getCuisineName(id) })),
@@ -31,9 +29,9 @@ export function PlanReview({ answers, mustHaveMealName, onConfirm, onEdit }: Pla
     answers.mustHaveText.toLowerCase() !== mustHaveMealName.toLowerCase()
 
   return (
-    <section aria-labelledby="plan-review-heading" className="animate-slide-in-next space-y-5 card">
+    <section aria-labelledby={headingId} className="animate-slide-in-next space-y-5 card">
       <div className="space-y-1">
-        <h2 id="plan-review-heading" ref={headingRef} tabIndex={-1} className="text-heading">
+        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="text-heading">
           Here's what we understood
         </h2>
         <p className="text-ink-muted">Check it before we pick your meals.</p>
