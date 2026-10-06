@@ -80,6 +80,23 @@ describe('apiFetch', () => {
 
     const error = await apiFetch('/me').catch((caught: unknown) => caught)
     expect(error).toBeInstanceOf(ApiError)
-    expect(error).toMatchObject({ status: 500, message: 'GET /me failed' })
+    expect(error).toMatchObject({ status: 500, message: 'GET /me failed', code: undefined })
+  })
+
+  it('keeps the error code our backend sends', async () => {
+    session.getAccessToken.mockResolvedValue('access-1')
+    fetchMock.mockResolvedValue(jsonResponse(429, { code: 'daily-limit', message: 'Limit' }))
+
+    await expect(apiFetch('/plan/understand')).rejects.toMatchObject({
+      status: 429,
+      code: 'daily-limit',
+    })
+  })
+
+  it('has no code when the error body is not JSON', async () => {
+    session.getAccessToken.mockResolvedValue('access-1')
+    fetchMock.mockResolvedValue(new Response('Bad gateway', { status: 502 }))
+
+    await expect(apiFetch('/me')).rejects.toMatchObject({ status: 502, code: undefined })
   })
 })

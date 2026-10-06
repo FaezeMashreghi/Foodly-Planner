@@ -12,6 +12,12 @@
     @apply outline-2 outline-offset-2 outline-focus;
   }
 
+  /* Tailwind v4 resets buttons to the default cursor; bring the pointer back. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
   /* Keyboard keys in text, e.g. "Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd>". */
   kbd {
     @apply rounded-control border border-line-strong bg-surface px-1.5 font-sans text-xs font-semibold text-ink;

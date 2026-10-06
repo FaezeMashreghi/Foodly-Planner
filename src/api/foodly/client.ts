@@ -2,11 +2,14 @@ import { getAccessToken, refreshAccessToken } from '@/api/auth/session'
 
 export class ApiError extends Error {
   readonly status: number
+  /** Set by our backend when the UI needs to tell one error from another, e.g. "daily-limit". */
+  readonly code: string | undefined
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -23,9 +26,21 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     response = await send(path, init, freshToken)
   }
 
-  if (!response.ok) throw new ApiError(response.status, `${init.method ?? 'GET'} ${path} failed`)
+  if (!response.ok) {
+    const message = `${init.method ?? 'GET'} ${path} failed`
+    throw new ApiError(response.status, message, await readErrorCode(response))
+  }
 
   return (await response.json()) as T
+}
+
+async function readErrorCode(response: Response) {
+  try {
+    const body = (await response.json()) as { code?: unknown }
+    return typeof body.code === 'string' ? body.code : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function send(path: string, init: RequestInit, token: string) {
