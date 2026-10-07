@@ -1,73 +1,74 @@
-# React + TypeScript + Vite
+# Foodly Planner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A weekly meal planner. You tell Foodly in your own words what's in your fridge, what you feel like and how much time you have. An AI turns that into structured answers, the app suggests matching meals, and you drag them into the days of your week. Each meal has a recipe written by AI once and shared by everyone.
 
-Currently, two official plugins are available:
+- **Live:** [main.d1wh7bghb5zvxn.amplifyapp.com](https://main.d1wh7bghb5zvxn.amplifyapp.com)
+- **Demo account:** `demo@foodly.com` / `*Demo1234*` (no sign-up needed)
+- **Best on desktop:** the layout is responsive, but I've tested it mostly on desktop, and the mobile experience still needs polish.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+<!-- TODO: screenshot or short GIF of the weekly planner -->
 
-## React Compiler
+## Why I built it
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **"What should I eat?"** Deciding every day takes more energy than cooking. I wanted to answer a few questions once and get a week of meals I'd actually like.
+- **Food going off in the fridge.** The first question is "What's going off soon?", and meals that use those ingredients come first.
 
-## Expanding the ESLint configuration
+It's also a personal challenge: to build one product end to end on my own, the way a team would, and write down every trade-off.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## What I'd like you to look at
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+I'm a frontend developer, so these are the parts I'm most proud of:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Accessible components without a library** ([`src/components/ui/`](src/components/ui/)): a native `<dialog>`, the WAI-ARIA tabs pattern, a GOV.UK-style password field, radio groups and form fields that link their hints and errors. Each component test file includes an axe check, and CI runs them as their own step. Also checked by hand with the keyboard and VoiceOver.
+- **A small design system on Tailwind** ([`src/styles/`](src/styles/)): Tailwind's default palette is removed, so only our own tokens can be used, and every text color passes WCAG AA contrast.
+- **Data loading with TanStack Router and Query** ([`src/api/foodly/`](src/api/foodly/)): route loaders fill the cache before a page shows (no blank page with a spinner), a dropped meal shows at once (if saving fails, the user is told and the plan is reloaded from the server), and suggestions are reloaded only when the answers change.
+- **The plan questions flow** ([`plan-questions-flow/`](src/components/plan-questions/plan-questions-flow/)): one component owns the API calls, loading, errors and navigation, and the screens only take props. Each step has its own URL so the browser's Back button works, the answers survive a refresh, and focus moves to each new question.
+- **The token manager** ([`session.ts`](src/api/auth/session.ts)): refreshes before the token expires, runs only one refresh at a time, retries a failed request once, and revokes the token on sign out.
+- **Tests that act like a user** (Vitest, Testing Library, user-event): elements are found by role and label, and tests are written for the scenarios where a bug would leave a user stuck, not for coverage.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+I also built the backend (AWS Lambda, DynamoDB, Bedrock for the AI, all in CDK) and the CI/CD pipeline myself.
+
+## Tech stack
+
+| Layer         | Choice                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| Frontend      | React 19, TypeScript, Vite                                            |
+| Routing, data | TanStack Router (file-based, typed) + TanStack Query                  |
+| Styling       | Tailwind CSS v4 with my own design tokens                             |
+| Drag and drop | dnd-kit                                                               |
+| Auth          | Amazon Cognito with my own forms and token manager                    |
+| Tests         | Vitest, Testing Library, user-event, axe-core                         |
+| Backend       | AWS Lambda + API Gateway, DynamoDB, Bedrock (Claude Haiku), AWS CDK   |
+| CI/CD         | GitHub Actions (lint, types, tests, axe on every PR), Amplify Hosting |
+
+## Key decisions
+
+A few of the trade-offs I made:
+
+- **No component library**, so I control every accessibility detail myself. It is slower to build, and components need testing by hand.
+- **AI only where it adds value:** the AI understands what the user writes, and plain, tested code ranks the meals. That keeps it cheap, fast and predictable.
+- **The step in the URL, the answers in `sessionStorage`:** Back and refresh work, and private text never shows in the address bar.
+- **Tokens in `localStorage`:** simple and common, so the real protection is preventing XSS, with a strict Content Security Policy.
+- **One field with a Show/Hide button, no "confirm password"** (GOV.UK pattern).
+
+## What's next
+
+1. **Open the current plan after sign-in**, instead of always starting with the questions.
+2. **Place a meal without dragging** ("Move to…" button), required by WCAG 2.2. This is the known accessibility gap.
+3. **Playwright tests of the main flow** in a real browser, run in CI.
+4. **Sentry and Core Web Vitals** from real users, to find what to improve.
+5. **Dislike a suggestion and get another one.**
+6. **Mobile polish:** test every page on real phones and improve the small-screen layouts.
+
+## Running it
+
+Requires Node 22 (`.nvmrc`).
+
+```sh
+npm install
+npm run dev        # http://localhost:5173
+npm run test:run   # all tests once
+npm run build      # type check + production build
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Copy `.env.example` to `.env.local` and fill in the Cognito and API values. The app needs the deployed backend; there is no local fake backend yet.
