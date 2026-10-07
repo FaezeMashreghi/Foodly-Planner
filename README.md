@@ -4,6 +4,7 @@ A weekly meal planner. You tell Foodly in your own words what's in your fridge, 
 
 - **Live:** [main.d1wh7bghb5zvxn.amplifyapp.com](https://main.d1wh7bghb5zvxn.amplifyapp.com)
 - **Demo account:** `demo@foodly.com` / `*Demo1234*` (no sign-up needed)
+- **Meals follow my taste:** the catalogue of ~100 meals was built around what I like to cook, so suggestions lean towards Persian and Turkish dishes, with some international, Asian and Dutch ones.
 - **Best on desktop:** the layout is responsive, but I've tested it mostly on desktop, and the mobile experience still needs polish.
 
 <!-- TODO: screenshot or short GIF of the weekly planner -->
@@ -62,13 +63,13 @@ A few of the trade-offs I made:
 
 ## Running it
 
+> **The easiest way to try the app is the [live site](https://main.d1wh7bghb5zvxn.amplifyapp.com) with the demo account.** Running it locally needs the deployed AWS backend (there is no local fake backend yet): copy `.env.example` to `.env.local` and fill in the Cognito and API values.
+
 Requires Node 22 (`.nvmrc`).
 
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm run test:run   # all tests once
+npm run test:run   # all tests once (no backend needed)
 npm run build      # type check + production build
 ```
-
-Copy `.env.example` to `.env.local` and fill in the Cognito and API values. The app needs the deployed backend; there is no local fake backend yet.
