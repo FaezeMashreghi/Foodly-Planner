@@ -14,7 +14,7 @@ import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs'
 const USER_POOL_ID = 'eu-west-2_C1b9UGOcy'
 const USER_POOL_CLIENT_ID = '433ii8tl6051h4qs9ko08f26st'
 const HAIKU_MODEL = 'anthropic.claude-haiku-4-5-20251001-v1:0'
-const ALLOWED_ORIGINS = ['http://localhost:5173']
+const ALLOWED_ORIGINS = ['http://localhost:5173', 'https://main.d1wh7bghb5zvxn.amplifyapp.com']
 
 export class FoodlyStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
