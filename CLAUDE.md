@@ -22,7 +22,7 @@ src/                      ← React frontend (client-side rendered)
 │   │   └── forgot-password.tsx  → /forgot-password
 │   ├── _authenticated.tsx ← guard: not signed in → redirect to /sign-in
 │   └── _authenticated/   ← pages behind login; "_authenticated" is not part of the URL
-│       ├── index.tsx            → /  (redirects to /weekly-plan)
+│       ├── index.tsx            → /  (redirects to /plan-questions)
 │       ├── weekly-plan.tsx      → /weekly-plan  (the planner)
 │       ├── plan-questions.tsx   → /plan-questions  (questions about the week → AI → meal suggestions)
 │       └── preferences.tsx      → /preferences  (planned)
@@ -87,7 +87,7 @@ Vitest runs all tests (`npm test` to watch, `npm run test:run` once). Two projec
 
 ## Decisions
 
-Technical choices and their trade-offs are recorded in the decision log in [README.md](README.md). When a new technical decision is made, add an entry there.
+Technical choices and their trade-offs are recorded in the decision log in [docs/decisions.md](docs/decisions.md). When a new technical decision is made, add an entry there.
 
 ## Design system
 
