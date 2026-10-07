@@ -44,3 +44,10 @@ jobs:
 
       - name: CDK deploy
         run: npx cdk deploy FoodlyStack --require-approval never
+
+      - name: Start the frontend build
+        run: |
+          curl --fail --silent --show-error -X POST \
+            -H 'Content-Type: application/json' -d '{}' "$AMPLIFY_WEBHOOK_URL"
+        env:
+          AMPLIFY_WEBHOOK_URL: ${{ secrets.AMPLIFY_WEBHOOK_URL }}
