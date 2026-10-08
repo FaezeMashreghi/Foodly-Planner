@@ -9,7 +9,7 @@ customHeaders:
           style-src 'self' 'unsafe-inline';
           img-src 'self' data:;
           font-src 'self';
-          connect-src 'self' https://ekzv7nwqf8.execute-api.eu-west-2.amazonaws.com https://cognito-idp.eu-west-2.amazonaws.com;
+          connect-src 'self' https://ekzv7nwqf8.execute-api.eu-west-2.amazonaws.com https://cognito-idp.eu-west-2.amazonaws.com https://o4512095219220480.ingest.de.sentry.io;
           object-src 'none';
           base-uri 'self';
           form-action 'self';
