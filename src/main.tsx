@@ -1,17 +1,21 @@
 import './instrument'
 import { StrictMode, type ErrorInfo } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import * as Sentry from '@sentry/react'
 import '@fontsource-variable/nunito'
 import './index.css'
 import { getAccessToken, getUser, subscribe } from '@/api/auth/session'
+import { reportToMonitoring } from '@/api/monitoring/monitoring'
 import { PageError } from '@/components/layout/page-error/page-error'
 import { PagePending } from '@/components/layout/page-pending/page-pending'
 import { routeTree } from './routeTree.gen'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: reportToMonitoring }),
+  mutationCache: new MutationCache({ onError: reportToMonitoring }),
+})
 
 const router = createRouter({
   routeTree,
@@ -21,16 +25,23 @@ const router = createRouter({
 })
 
 // When the user signs in or out (or the session expires): drop the previous user's data,
-// then re-run the route guards and loaders.
+// re-run the route guards and loaders, and update the user on Sentry errors.
 subscribe(() => {
   queryClient.clear()
   void router.invalidate()
+  setSentryUser()
 })
+setSentryUser()
 
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+}
+
+function setSentryUser() {
+  const user = getUser()
+  Sentry.setUser(user ? { id: user.id } : null)
 }
 
 function logError(error: unknown) {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { apiFetch, ApiError } from './client'
+import { ApiError } from './api-error'
+import { apiFetch } from './client'
 
 const session = vi.hoisted(() => ({ getAccessToken: vi.fn(), refreshAccessToken: vi.fn() }))
 vi.mock('@/api/auth/session', () => session)
