@@ -1,4 +1,4 @@
-import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { db } from './data/db.mjs'
 import { loadMeals } from './data/meals.mjs'
 import { claimDailyCall } from './data/usage.mjs'
@@ -40,6 +40,9 @@ function route(event) {
       return understandText(userId, event.body)
     case 'GET /plan/suggestions':
       return getSuggestions(userId, event.queryStringParameters?.week)
+    case 'GET /plans':
+      return getPlanHistory(userId)
+
     default:
       return json(404, { message: 'Not found' })
   }
@@ -65,6 +68,23 @@ async function getPlan(userId, weekStart) {
     new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart } }),
   )
   return json(200, { weekStart, slots: Item?.slots ?? {} })
+}
+
+async function getPlanHistory(userId) {
+  const { Items } = await db.send(
+    new QueryCommand({
+      TableName: PLANS_TABLE,
+      KeyConditionExpression: 'userId = :userId',
+      ExpressionAttributeValues: { ':userId': userId },
+      ProjectionExpression: 'weekStart, slots',
+      ScanIndexForward: false,
+    }),
+  )
+  return json(200, { plans: Items.filter(hasMeals) })
+}
+
+function hasMeals(plan) {
+  return Object.keys(plan.slots ?? {}).length > 0
 }
 
 async function getSuggestions(userId, weekStart) {

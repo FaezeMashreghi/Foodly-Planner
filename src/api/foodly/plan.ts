@@ -7,6 +7,11 @@ export function fetchWeekPlan(weekStart: string) {
   return apiFetch<Plan>(`/plan?week=${encodeURIComponent(weekStart)}`)
 }
 
+/** Every week the user has placed a meal in, newest first. */
+export function fetchPlanHistory() {
+  return apiFetch<{ plans: Plan[] }>('/plans')
+}
+
 /** Meal ids per meal type, best first, scored by the backend from the saved answers. */
 export function fetchPlanSuggestions(weekStart: string) {
   return apiFetch<PlanSuggestions>(`/plan/suggestions?week=${encodeURIComponent(weekStart)}`)
@@ -36,6 +41,13 @@ export function planQueryOptions(weekStart: string) {
   return queryOptions({
     queryKey: queryKeys.plan(weekStart),
     queryFn: () => fetchWeekPlan(weekStart),
+  })
+}
+
+export function planHistoryQueryOptions() {
+  return queryOptions({
+    queryKey: queryKeys.planHistory,
+    queryFn: fetchPlanHistory,
   })
 }
 

@@ -102,6 +102,7 @@ export class FoodlyStack extends Stack {
       [HttpMethod.GET, '/plan/suggestions'],
       [HttpMethod.PUT, '/plan/answers'],
       [HttpMethod.POST, '/plan/understand'],
+      [HttpMethod.GET, '/plans'],
     ]
     const httpRoutes = routes.flatMap(([method, routePath]) =>
       api.addRoutes({ path: routePath, methods: [method], integration }),
