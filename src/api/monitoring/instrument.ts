@@ -6,4 +6,7 @@ Sentry.init({
   enabled: import.meta.env.PROD,
   denyUrls: [/^chrome-extension:\/\//, /^moz-extension:\/\//, /^safari-web-extension:\/\//],
   tracesSampleRate: 1.0,
+  integrations: [Sentry.replayIntegration()],
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 1.0,
 })
