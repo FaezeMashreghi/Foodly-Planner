@@ -1,17 +1,5 @@
 import { getAccessToken, refreshAccessToken } from '@/api/auth/session'
-
-export class ApiError extends Error {
-  readonly status: number
-  /** Set by our backend when the UI needs to tell one error from another, e.g. "daily-limit". */
-  readonly code: string | undefined
-
-  constructor(status: number, message: string, code?: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.code = code
-  }
-}
+import { ApiError } from './api-error'
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await getAccessToken()

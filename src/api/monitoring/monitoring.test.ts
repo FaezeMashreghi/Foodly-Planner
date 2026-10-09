@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/api/foodly/client'
+import { ApiError } from '@/api/foodly/api-error'
 import { shouldReportError } from './monitoring'
 
 function setOnline(onLine: boolean) {
