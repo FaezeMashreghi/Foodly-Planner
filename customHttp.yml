@@ -2,6 +2,7 @@ customHeaders:
   - pattern: '**/*'
     headers:
       # Inline styles: dnd-kit adds a <style> tag. data: images: Vite inlines small images.
+      # blob: workers: Sentry Replay compresses recordings in a worker it creates from a blob: URL.
       - key: Content-Security-Policy
         value: >-
           default-src 'self';
@@ -10,6 +11,7 @@ customHeaders:
           img-src 'self' data:;
           font-src 'self';
           connect-src 'self' https://ekzv7nwqf8.execute-api.eu-west-2.amazonaws.com https://cognito-idp.eu-west-2.amazonaws.com https://o4512095219220480.ingest.de.sentry.io;
+          worker-src 'self' blob:;
           object-src 'none';
           base-uri 'self';
           form-action 'self';
