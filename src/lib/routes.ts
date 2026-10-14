@@ -8,6 +8,7 @@ export const ROUTES = {
   home: '/',
   weeklyPlan: '/weekly-plan',
   planQuestions: '/plan-questions',
+  planHistory: '/plan-history',
   signIn: '/sign-in',
   signUp: '/sign-up',
   confirmEmail: '/confirm-email',

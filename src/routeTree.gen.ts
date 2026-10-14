@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as GuestRouteImport } from './routes/_guest'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedPlanHistoryRouteImport } from './routes/_authenticated/plan-history'
 import { Route as AuthenticatedPlanQuestionsRouteImport } from './routes/_authenticated/plan-questions'
 import { Route as AuthenticatedWeeklyPlanRouteImport } from './routes/_authenticated/weekly-plan'
 import { Route as GuestConfirmEmailRouteImport } from './routes/_guest/confirm-email'
@@ -32,6 +33,12 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPlanHistoryRoute =
+  AuthenticatedPlanHistoryRouteImport.update({
+    id: '/plan-history',
+    path: '/plan-history',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPlanQuestionsRoute =
   AuthenticatedPlanQuestionsRouteImport.update({
     id: '/plan-questions',
@@ -66,6 +73,7 @@ const GuestSignUpRoute = GuestSignUpRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/plan-history': typeof AuthenticatedPlanHistoryRoute
   '/plan-questions': typeof AuthenticatedPlanQuestionsRoute
   '/weekly-plan': typeof AuthenticatedWeeklyPlanRoute
   '/confirm-email': typeof GuestConfirmEmailRoute
@@ -75,6 +83,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
+  '/plan-history': typeof AuthenticatedPlanHistoryRoute
   '/plan-questions': typeof AuthenticatedPlanQuestionsRoute
   '/weekly-plan': typeof AuthenticatedWeeklyPlanRoute
   '/confirm-email': typeof GuestConfirmEmailRoute
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
+  '/_authenticated/plan-history': typeof AuthenticatedPlanHistoryRoute
   '/_authenticated/plan-questions': typeof AuthenticatedPlanQuestionsRoute
   '/_authenticated/weekly-plan': typeof AuthenticatedWeeklyPlanRoute
   '/_guest/confirm-email': typeof GuestConfirmEmailRoute
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/plan-history'
     | '/plan-questions'
     | '/weekly-plan'
     | '/confirm-email'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/plan-history'
     | '/plan-questions'
     | '/weekly-plan'
     | '/confirm-email'
@@ -117,6 +129,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/_guest'
+    | '/_authenticated/plan-history'
     | '/_authenticated/plan-questions'
     | '/_authenticated/weekly-plan'
     | '/_guest/confirm-email'
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/plan-history': {
+      id: '/_authenticated/plan-history'
+      path: '/plan-history'
+      fullPath: '/plan-history'
+      preLoaderRoute: typeof AuthenticatedPlanHistoryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/plan-questions': {
@@ -200,12 +220,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedPlanHistoryRoute: typeof AuthenticatedPlanHistoryRoute
   AuthenticatedPlanQuestionsRoute: typeof AuthenticatedPlanQuestionsRoute
   AuthenticatedWeeklyPlanRoute: typeof AuthenticatedWeeklyPlanRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedPlanHistoryRoute: AuthenticatedPlanHistoryRoute,
   AuthenticatedPlanQuestionsRoute: AuthenticatedPlanQuestionsRoute,
   AuthenticatedWeeklyPlanRoute: AuthenticatedWeeklyPlanRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

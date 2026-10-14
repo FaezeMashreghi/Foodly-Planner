@@ -42,7 +42,6 @@ function route(event) {
       return getSuggestions(userId, event.queryStringParameters?.week)
     case 'GET /plans':
       return getPlanHistory(userId)
-
     default:
       return json(404, { message: 'Not found' })
   }
