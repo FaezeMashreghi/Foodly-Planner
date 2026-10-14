@@ -4,36 +4,37 @@
 
 Each entry says what was chosen, why, what else was considered, and the trade-off accepted.
 
-**Frontend highlights:** [2](#2-styling-tailwind-css--custom-design-system), [3](#3-no-component-library-components-are-hand-written), [5](#5-authentication-cognito-with-our-own-email--password-forms), [7](#7-routing-and-data-loading-tanstack-router--tanstack-query), [13](#13-password-fields-one-field-with-a-showhide-button-no-confirm-password), [14](#14-testing-vitest-with-testing-library-for-components), [15](#15-drag-and-drop-in-the-weekly-plan-dnd-kit), [23](#23-plan-questions-the-step-in-the-url-the-answers-in-a-sessionstorage-draft).
+**Frontend highlights:** [2](#2-styling-tailwind-css--custom-design-system), [3](#3-no-component-library-components-are-hand-written), [5](#5-authentication-cognito-with-our-own-email--password-forms), [7](#7-routing-and-data-loading-tanstack-router--tanstack-query), [13](#13-password-fields-one-field-with-a-showhide-button-no-confirm-password), [14](#14-testing-vitest-with-testing-library-for-components), [15](#15-drag-and-drop-in-the-weekly-plan-dnd-kit), [23](#23-plan-questions-the-step-in-the-url-the-answers-in-a-sessionstorage-draft), [28](#28-plan-history-one-query-per-user-native-disclosure-list-loads-after-the-page).
 
-| #   | Decision                                                                                                                                                      | Status            |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| 1   | [Backend on AWS with a single database](#1-backend-on-aws-with-a-single-database)                                                                             | Current           |
-| 2   | [Styling: Tailwind CSS + custom design system](#2-styling-tailwind-css--custom-design-system)                                                                 | Current           |
-| 3   | [No component library: components are hand-written](#3-no-component-library-components-are-hand-written)                                                      | Current           |
-| 4   | [Project structure: single package, frontend organized by route](#4-project-structure-single-package-frontend-organized-by-route)                             | Current           |
-| 5   | [Authentication: Cognito with our own email + password forms](#5-authentication-cognito-with-our-own-email--password-forms)                                   | Current           |
-| 7   | [Routing and data loading: TanStack Router + TanStack Query](#7-routing-and-data-loading-tanstack-router--tanstack-query)                                     | Current           |
-| 8   | [Auth page background: illustration on large screens only](#8-auth-page-background-illustration-on-large-screens-only)                                        | Current           |
-| 9   | [AWS account and Cognito setup](#9-aws-account-and-cognito-setup)                                                                                             | Partly done       |
-| 10  | [Visual design: palette and font from the illustration](#10-visual-design-palette-and-font-from-the-illustration)                                             | Current           |
-| 11  | [Auth code: thin Cognito wrappers and typed errors](#11-auth-code-thin-cognito-wrappers-and-typed-errors)                                                     | Current           |
-| 12  | [Code formatting: Prettier, with ESLint for correctness](#12-code-formatting-prettier-with-eslint-for-correctness)                                            | Current           |
-| 13  | [Password fields: one field with a Show/Hide button, no "confirm password"](#13-password-fields-one-field-with-a-showhide-button-no-confirm-password)         | Current           |
-| 14  | [Testing: Vitest, with Testing Library for components](#14-testing-vitest-with-testing-library-for-components)                                                | Current           |
-| 15  | [Drag and drop in the weekly plan: dnd-kit](#15-drag-and-drop-in-the-weekly-plan-dnd-kit)                                                                     | Current           |
-| 16  | [Backend: Lambda + API Gateway HTTP API, created with AWS CDK](#16-backend-lambda--api-gateway-http-api-created-with-aws-cdk)                                 | Updated by 18, 24 |
-| 17  | [Meal planning: a meal catalogue, AI only to understand the user](#17-meal-planning-a-meal-catalogue-ai-only-to-understand-the-user)                          | Updated by 22     |
-| 18  | [A small backend: one Lambda, DynamoDB, Bedrock](#18-a-small-backend-one-lambda-dynamodb-bedrock)                                                             | Updated by 24     |
-| 19  | [Meal details: native `<dialog>`, recipes generated once, a YouTube search link](#19-meal-details-native-dialog-recipes-generated-once-a-youtube-search-link) | Current           |
-| 20  | [App icon next to the name "Foodly"](#20-app-icon-next-to-the-name-foodly)                                                                                    | Current           |
-| 21  | [Plan questions page illustration: cropped, white kept, three WebP sizes](#21-plan-questions-page-illustration-cropped-white-kept-three-webp-sizes)           | Current           |
-| 22  | [Suggestions are scored in the backend](#22-suggestions-are-scored-in-the-backend)                                                                            | Current           |
-| 23  | [Plan questions: the step in the URL, the answers in a `sessionStorage` draft](#23-plan-questions-the-step-in-the-url-the-answers-in-a-sessionstorage-draft)  | Current           |
-| 24  | [Backend moved from the console to CDK](#24-backend-moved-from-the-console-to-cdk)                                                                            | Current           |
-| 25  | [Backend hardening: errors, config in infra, cached meals, cost limits](#25-backend-hardening-errors-config-in-infra-cached-meals-cost-limits)                | Current           |
-| 26  | [CI/CD: GitHub Actions with OIDC, no AWS keys stored](#26-cicd-github-actions-with-oidc-no-aws-keys-stored)                                                   | Current           |
-| 27  | [Frontend hosting: Amplify Hosting, built only after CI](#27-frontend-hosting-amplify-hosting-built-only-after-ci)                                            | Current           |
+| #   | Decision                                                                                                                                                          | Status            |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| 1   | [Backend on AWS with a single database](#1-backend-on-aws-with-a-single-database)                                                                                 | Current           |
+| 2   | [Styling: Tailwind CSS + custom design system](#2-styling-tailwind-css--custom-design-system)                                                                     | Current           |
+| 3   | [No component library: components are hand-written](#3-no-component-library-components-are-hand-written)                                                          | Current           |
+| 4   | [Project structure: single package, frontend organized by route](#4-project-structure-single-package-frontend-organized-by-route)                                 | Current           |
+| 5   | [Authentication: Cognito with our own email + password forms](#5-authentication-cognito-with-our-own-email--password-forms)                                       | Current           |
+| 7   | [Routing and data loading: TanStack Router + TanStack Query](#7-routing-and-data-loading-tanstack-router--tanstack-query)                                         | Current           |
+| 8   | [Auth page background: illustration on large screens only](#8-auth-page-background-illustration-on-large-screens-only)                                            | Current           |
+| 9   | [AWS account and Cognito setup](#9-aws-account-and-cognito-setup)                                                                                                 | Partly done       |
+| 10  | [Visual design: palette and font from the illustration](#10-visual-design-palette-and-font-from-the-illustration)                                                 | Current           |
+| 11  | [Auth code: thin Cognito wrappers and typed errors](#11-auth-code-thin-cognito-wrappers-and-typed-errors)                                                         | Current           |
+| 12  | [Code formatting: Prettier, with ESLint for correctness](#12-code-formatting-prettier-with-eslint-for-correctness)                                                | Current           |
+| 13  | [Password fields: one field with a Show/Hide button, no "confirm password"](#13-password-fields-one-field-with-a-showhide-button-no-confirm-password)             | Current           |
+| 14  | [Testing: Vitest, with Testing Library for components](#14-testing-vitest-with-testing-library-for-components)                                                    | Current           |
+| 15  | [Drag and drop in the weekly plan: dnd-kit](#15-drag-and-drop-in-the-weekly-plan-dnd-kit)                                                                         | Current           |
+| 16  | [Backend: Lambda + API Gateway HTTP API, created with AWS CDK](#16-backend-lambda--api-gateway-http-api-created-with-aws-cdk)                                     | Updated by 18, 24 |
+| 17  | [Meal planning: a meal catalogue, AI only to understand the user](#17-meal-planning-a-meal-catalogue-ai-only-to-understand-the-user)                              | Updated by 22     |
+| 18  | [A small backend: one Lambda, DynamoDB, Bedrock](#18-a-small-backend-one-lambda-dynamodb-bedrock)                                                                 | Updated by 24     |
+| 19  | [Meal details: native `<dialog>`, recipes generated once, a YouTube search link](#19-meal-details-native-dialog-recipes-generated-once-a-youtube-search-link)     | Current           |
+| 20  | [App icon next to the name "Foodly"](#20-app-icon-next-to-the-name-foodly)                                                                                        | Current           |
+| 21  | [Plan questions page illustration: cropped, white kept, three WebP sizes](#21-plan-questions-page-illustration-cropped-white-kept-three-webp-sizes)               | Current           |
+| 22  | [Suggestions are scored in the backend](#22-suggestions-are-scored-in-the-backend)                                                                                | Current           |
+| 23  | [Plan questions: the step in the URL, the answers in a `sessionStorage` draft](#23-plan-questions-the-step-in-the-url-the-answers-in-a-sessionstorage-draft)      | Current           |
+| 24  | [Backend moved from the console to CDK](#24-backend-moved-from-the-console-to-cdk)                                                                                | Current           |
+| 25  | [Backend hardening: errors, config in infra, cached meals, cost limits](#25-backend-hardening-errors-config-in-infra-cached-meals-cost-limits)                    | Current           |
+| 26  | [CI/CD: GitHub Actions with OIDC, no AWS keys stored](#26-cicd-github-actions-with-oidc-no-aws-keys-stored)                                                       | Current           |
+| 27  | [Frontend hosting: Amplify Hosting, built only after CI](#27-frontend-hosting-amplify-hosting-built-only-after-ci)                                                | Current           |
+| 28  | [Plan history: one query per user, native disclosure, list loads after the page](#28-plan-history-one-query-per-user-native-disclosure-list-loads-after-the-page) | Current           |
 
 ## 1. Backend on AWS with a single database
 
@@ -322,3 +323,15 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Instead of:** S3 + CloudFront in CDK (full control but more to build; on the roadmap), Amplify auto-build (a failing commit could go live), Vercel or Netlify (a second provider).
 
 **Trade-off:** Amplify is set up in the console; the API address is typed into the CSP by hand; the site and API are on different domains, so CORS stays.
+
+## 28. Plan history: one query per user, native disclosure, list loads after the page
+
+**Chosen:** a read-only `/plan-history` page, opened from the weekly plan, listing every week with at least one meal, newest first.
+
+- **Backend:** `GET /plans` runs one DynamoDB `Query` on the plans table's keys (`userId`, then `weekStart`) with `ScanIndexForward: false`, so DynamoDB returns the weeks newest first. Only `weekStart` and `slots` are read (not the free-text answers); weeks without meals are dropped in the Lambda.
+- **Markup:** each week is a `<details>`/`<summary>` (the newest open), so keyboard, screen reader state and hiding come from the browser. The days and meals are a `<dl>` (day → meals). No heading inside `<summary>`: its button role would flatten it.
+- **Loading:** the loader starts both requests without awaiting them, and only the list is in `<Suspense>`. The intro card and illustration show at once instead of a full-page "Loading…", and the illustration starts loading in parallel with the data.
+
+**Instead of:** a `Scan` (reads every user's rows), "previous/next week" buttons in the planner (one week at a time), an `aria-expanded` button with React state (the same result written by hand), a 7 × 3 table per week (mostly empty cells, too wide on a phone), awaiting the data in the loader (blank page until the slowest request).
+
+**Trade-off:** no paging: one `Query` returns up to 1 MB, which is hundreds of weeks per user, so `LastEvaluatedKey` isn't handled yet. Weeks can't be opened in the planner from here. A meal removed from the catalogue shows as "Meal no longer available".
