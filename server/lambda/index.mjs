@@ -64,22 +64,32 @@ async function getPlan(userId, weekStart) {
   if (!isWeekStart(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
 
   const { Item } = await db.send(
-    new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart } }),
+    new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart }, ConsistentRead: true }),
   )
   return json(200, { weekStart, slots: Item?.slots ?? {} })
 }
 
+// A Query returns at most 1 MB, so keep reading while DynamoDB says there's another page.
 async function getPlanHistory(userId) {
-  const { Items } = await db.send(
-    new QueryCommand({
-      TableName: PLANS_TABLE,
-      KeyConditionExpression: 'userId = :userId',
-      ExpressionAttributeValues: { ':userId': userId },
-      ProjectionExpression: 'weekStart, slots',
-      ScanIndexForward: false,
-    }),
-  )
-  return json(200, { plans: Items.filter(hasMeals) })
+  const plans = []
+  let startKey
+  do {
+    const page = await db.send(
+      new QueryCommand({
+        TableName: PLANS_TABLE,
+        KeyConditionExpression: 'userId = :userId',
+        ExpressionAttributeValues: { ':userId': userId },
+        ProjectionExpression: 'weekStart, slots',
+        ScanIndexForward: false,
+        ConsistentRead: true,
+        ExclusiveStartKey: startKey,
+      }),
+    )
+    plans.push(...page.Items)
+    startKey = page.LastEvaluatedKey
+  } while (startKey)
+
+  return json(200, { plans: plans.filter(hasMeals) })
 }
 
 function hasMeals(plan) {
@@ -90,7 +100,9 @@ async function getSuggestions(userId, weekStart) {
   if (!isWeekStart(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
 
   const [{ Item }, meals] = await Promise.all([
-    db.send(new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart } })),
+    db.send(
+      new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart }, ConsistentRead: true }),
+    ),
     loadMeals(),
   ])
   return json(200, suggestMeals(meals, Item?.answers))
