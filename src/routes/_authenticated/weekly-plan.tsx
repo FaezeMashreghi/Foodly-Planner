@@ -1,8 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { isIsoDate, weekStartOf } from '@shared/week-plan/week-plan'
 import { mealsQueryOptions } from '@/api/foodly/meals'
 import { planQueryOptions, planSuggestionsQueryOptions } from '@/api/foodly/plan'
 import { formatLongDate } from '@/lib/format-date'
+import { ROUTES } from '@/lib/routes'
 import { WeekPlanner } from '@/components/weekly-plan/week-planner/week-planner'
 
 export const Route = createFileRoute('/_authenticated/weekly-plan')({
@@ -28,7 +29,12 @@ function WeeklyPlanPage() {
 
   return (
     <div className="space-y-2">
-      <h1 className="text-title">Your week</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-title">Your week</h1>
+        <Link to={ROUTES.planHistory} className="btn-secondary">
+          Plan history
+        </Link>
+      </div>
       <p className="text-ink-muted">7 days from {formatLongDate(weekStart)}</p>
       <WeekPlanner weekStart={weekStart} />
     </div>
