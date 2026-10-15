@@ -4,8 +4,7 @@ import { DaySection } from '@/components/weekly-plan/day-section/day-section'
 import { DroppableMealSlot } from '@/components/weekly-plan/droppable-meal-slot/droppable-meal-slot'
 import { MealCard } from '@/components/weekly-plan/meal-card/meal-card'
 import { SuggestionList } from '@/components/weekly-plan/suggestion-list/suggestion-list'
-import { SuggestionsPlaceholder } from '@/components/weekly-plan/suggestions-placeholder/suggestions-placeholder'
-import type { WeekViewProps } from '@/components/weekly-plan/week-planner/week-view'
+import type { WeekViewProps } from '@/components/weekly-plan/week-view'
 
 export function DesktopWeek({ days, slots, mealsById, suggestions, onPlace }: WeekViewProps) {
   function findMeal(id: unknown) {
@@ -40,14 +39,10 @@ export function DesktopWeek({ days, slots, mealsById, suggestions, onPlace }: We
             />
           ))}
         </div>
-        {suggestions.status === 'success' ? (
-          <SuggestionList
-            choices={suggestions.choices}
-            className="sticky top-4 max-h-screen self-start"
-          />
-        ) : (
-          <SuggestionsPlaceholder suggestions={suggestions} />
-        )}
+        <SuggestionList
+          suggestions={suggestions}
+          className="sticky top-4 max-h-screen self-start"
+        />
       </div>
 
       <DragOverlay dropAnimation={null}>{renderDragOverlay}</DragOverlay>

@@ -21,12 +21,12 @@ export function MealPicker({ meals, onPick }: MealPickerProps) {
             meal={meal}
             showMealTypes
             action={
-              <div className="flex flex-wrap justify-end">
+              <>
                 <MealDetailsButton meal={meal} />
                 <PillButton variant="primary" hiddenText={meal.name} onClick={() => onPick(meal)}>
                   Choose
                 </PillButton>
-              </div>
+              </>
             }
           />
         </li>

@@ -49,7 +49,7 @@ export function MealCard({
       {action && (
         <div className="flex flex-wrap items-center justify-between gap-x-2 px-1 @xs:pl-17">
           {mealTypeList}
-          <div className="ml-auto">{action}</div>
+          <div className="ml-auto flex flex-wrap justify-end">{action}</div>
         </div>
       )}
     </div>

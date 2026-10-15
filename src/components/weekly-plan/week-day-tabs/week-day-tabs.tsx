@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { dayOf, type Day } from '@shared/week-plan/week-plan'
 import { Tabs, type Tab } from '@/components/ui/tabs/tabs'
 import { DaySection } from '@/components/weekly-plan/day-section/day-section'
-import type { WeekViewProps } from '@/components/weekly-plan/week-planner/week-view'
+import type { WeekViewProps } from '@/components/weekly-plan/week-view'
 
 export function WeekDayTabs({ days, ...dayProps }: WeekViewProps) {
   const [selectedDay, setSelectedDay] = useState<Day>(() => dayOf(new Date()))
@@ -20,7 +20,8 @@ export function WeekDayTabs({ days, ...dayProps }: WeekViewProps) {
       onSelect={setSelectedDay}
       tabListClassName="sticky top-0 z-10 bg-canvas py-2"
     >
-      <DaySection day={selectedDay} {...dayProps} />
+      {/* key: each day gets its own slots, so nothing carries over from the day before. */}
+      <DaySection key={selectedDay} day={selectedDay} {...dayProps} />
     </Tabs>
   )
 }

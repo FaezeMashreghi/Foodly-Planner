@@ -2,10 +2,7 @@ import type { ComponentType } from 'react'
 import { MEAL_TYPES, type Meal } from '@shared/meal/meal'
 import { toSlotId, type Day, type PlanSlots } from '@shared/week-plan/week-plan'
 import { MealSlot, type MealSlotProps } from '@/components/weekly-plan/meal-slot/meal-slot'
-import type {
-  PlaceMealInSlot,
-  SuggestionsState,
-} from '@/components/weekly-plan/week-planner/week-view'
+import type { PlaceMealInSlot, SuggestionsState } from '@/components/weekly-plan/week-view'
 
 type DaySectionProps = {
   day: Day

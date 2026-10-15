@@ -7,10 +7,7 @@ import { MealCard } from '@/components/weekly-plan/meal-card/meal-card'
 import { MealDetailsButton } from '@/components/weekly-plan/meal-details-button/meal-details-button'
 import { MealPicker } from '@/components/weekly-plan/meal-picker/meal-picker'
 import { UnavailableSuggestions } from '@/components/weekly-plan/unavailable-suggestions/unavailable-suggestions'
-import type {
-  PlaceMealInSlot,
-  SuggestionsState,
-} from '@/components/weekly-plan/week-planner/week-view'
+import type { PlaceMealInSlot, SuggestionsState } from '@/components/weekly-plan/week-view'
 
 export type MealSlotProps = {
   day: Day
@@ -33,15 +30,13 @@ export function MealSlot({
 }: MealSlotProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const changeButtonRef = useRef<HTMLButtonElement>(null)
-  const focusChangeButton = useRef(false)
+  const pickedMealId = useRef<string | undefined>(undefined)
   const mealName = mealType.toLowerCase()
 
   // The Add button had focus, and the meal card replaces it: move focus to its Change button.
   useEffect(() => {
-    if (meal && focusChangeButton.current) {
-      focusChangeButton.current = false
-      changeButtonRef.current?.focus()
-    }
+    if (meal && meal.id === pickedMealId.current) changeButtonRef.current?.focus()
+    pickedMealId.current = undefined
   }, [meal])
 
   function openPicker() {
@@ -54,7 +49,7 @@ export function MealSlot({
 
   function pick(chosen: Meal) {
     setPickerOpen(false)
-    focusChangeButton.current = !meal
+    pickedMealId.current = meal ? undefined : chosen.id
     onPlace(toSlotId(day, mealType), chosen)
   }
 
@@ -71,7 +66,7 @@ export function MealSlot({
           <MealCard
             meal={meal}
             action={
-              <div className="flex flex-wrap justify-end">
+              <>
                 <MealDetailsButton meal={meal} />
                 <PillButton
                   ref={changeButtonRef}
@@ -80,7 +75,7 @@ export function MealSlot({
                 >
                   Change
                 </PillButton>
-              </div>
+              </>
             }
           />
         ) : (

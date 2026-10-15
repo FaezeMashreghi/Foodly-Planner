@@ -1,4 +1,4 @@
-import type { UnavailableSuggestionsState } from '@/components/weekly-plan/week-planner/week-view'
+import type { UnavailableSuggestionsState } from '@/components/weekly-plan/week-view'
 
 export function UnavailableSuggestions({
   suggestions,

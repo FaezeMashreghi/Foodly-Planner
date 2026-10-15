@@ -10,7 +10,11 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSavePlanSlots } from '@/hooks/use-save-plan-slots'
 import { LARGE_SCREEN } from '@/lib/breakpoints'
 import { placeMeal } from './place-meal'
-import { toMealChoices, type SuggestionsState, type WeekViewProps } from './week-view'
+import {
+  toMealChoices,
+  type SuggestionsState,
+  type WeekViewProps,
+} from '@/components/weekly-plan/week-view'
 
 const DesktopWeek = lazy(loadDesktopWeek)
 
