@@ -16,7 +16,7 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 ## Release and deploy (single-page app)
 
 - [x] **Commit `src/routeTree.gen.ts`**, so `tsc` works on a fresh machine (CI).
-- [x] **Reload on stale code:** on Vite's `vite:preloadError` event the page reloads once, so users with an old tab get the new version instead of "Failed to fetch dynamically imported module" ([`reload-on-stale-code.ts`](../src/lib/reload-on-stale-code.ts), decision 27).
+- [ ] **Reload on stale code**, only if Sentry shows it is needed. After deploys, search Sentry for "Failed to fetch dynamically imported module" (Chrome), "Importing a module script failed" (Safari) and "error loading dynamically imported module" (Firefox). If they show up, restore `reload-on-stale-code.ts` and its test from commit `d117d27`: on Vite's `vite:preloadError` the page reloads once (a 10 s `sessionStorage` guard stops a loop). Built once and removed as too much while skew protection covers most cases (decision 27).
 - [x] **SPA fallback:** an Amplify rewrite rule (`</^[^.]+$/>` → `/index.html`, `200`) sends page URLs (no dot) to the app, so opening or refreshing `/weekly-plan` works. Amplify's default "every 404 → `index.html`" rule was removed: it hides missing JS and image files.
 - [x] **Caching:** hashed assets (`/assets/**`) get `public, max-age=31536000, immutable` from [`customHttp.yml`](../customHttp.yml); `index.html` keeps Amplify's `max-age=0`, so the browser always checks it and learns the new asset names after a deploy.
 - [x] **Open tabs after a deploy:** Amplify skew protection is on for `main`: each browser keeps getting its deployment's files for a week (decision 27).

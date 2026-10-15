@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_authenticated/weekly-plan')({
       context.queryClient.query(mealsQueryOptions),
       context.queryClient.query({ ...planQueryOptions(weekStart), staleTime: 'static' }),
       // Fetch the drag-and-drop chunk alongside the data, so large screens never wait for it.
-      // If it fails, the error page's Try again runs the loader, and so the download, again.
+      // If it fails, the route's error page shows (a page reload fixes it; Try again can't, see decision 29).
       window.matchMedia(LARGE_SCREEN).matches && loadDesktopWeek(),
     ])
     return { weekStart }

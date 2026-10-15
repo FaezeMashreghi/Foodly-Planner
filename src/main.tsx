@@ -14,10 +14,7 @@ import {
 } from '@/api/monitoring/monitoring'
 import { PageError } from '@/components/layout/page-error/page-error'
 import { PagePending } from '@/components/layout/page-pending/page-pending'
-import { reloadOnStaleCode } from '@/lib/reload-on-stale-code'
 import { routeTree } from './routeTree.gen'
-
-reloadOnStaleCode()
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: reportToMonitoring }),
