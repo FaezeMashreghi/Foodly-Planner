@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { MEAL_TYPES, type Meal, type MealType } from '@shared/meal/meal'
-import type { PlanSuggestions } from '@shared/week-plan/week-plan'
+import { MEAL_TYPES, type MealType } from '@shared/meal/meal'
 import { Tabs, type Tab } from '@/components/ui/tabs/tabs'
 import { DraggableMeal } from '@/components/weekly-plan/draggable-meal/draggable-meal'
+import type { MealChoices } from '@/components/weekly-plan/week-planner/week-view'
 
 const MEAL_TYPE_TABS: Tab<MealType>[] = MEAL_TYPES.map((mealType) => ({
   id: mealType,
@@ -10,14 +10,12 @@ const MEAL_TYPE_TABS: Tab<MealType>[] = MEAL_TYPES.map((mealType) => ({
 }))
 
 type SuggestionListProps = {
-  suggestions: PlanSuggestions
-  mealsById: ReadonlyMap<string, Meal>
+  choices: MealChoices
   className?: string
 }
 
-export function SuggestionList({ suggestions, mealsById, className = '' }: SuggestionListProps) {
+export function SuggestionList({ choices, className = '' }: SuggestionListProps) {
   const [mealType, setMealType] = useState<MealType>('Breakfast')
-  const meals = suggestions[mealType].flatMap((id) => mealsById.get(id) ?? [])
 
   return (
     <aside
@@ -30,7 +28,7 @@ export function SuggestionList({ suggestions, mealsById, className = '' }: Sugge
       <p className="text-sm text-ink-muted">Drag a meal onto a day.</p>
       <Tabs label="Meal type" tabs={MEAL_TYPE_TABS} selectedId={mealType} onSelect={setMealType}>
         <ul className="space-y-2">
-          {meals.map((meal) => (
+          {choices[mealType].map((meal) => (
             <li key={meal.id}>
               <DraggableMeal meal={meal} />
             </li>

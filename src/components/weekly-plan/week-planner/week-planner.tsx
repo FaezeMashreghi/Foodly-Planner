@@ -1,65 +1,73 @@
-import { DragDropProvider, DragOverlay, type DragEndEvent } from '@dnd-kit/react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { daysFrom, isSlotId } from '@shared/week-plan/week-plan'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { lazy, useMemo, useState } from 'react'
+import type { Meal } from '@shared/meal/meal'
+import { daysFrom, type SlotId } from '@shared/week-plan/week-plan'
 import { mealsQueryOptions } from '@/api/foodly/meals'
 import { planQueryOptions, planSuggestionsQueryOptions } from '@/api/foodly/plan'
-import { MealCard } from '@/components/weekly-plan/meal-card/meal-card'
-import { SuggestionList } from '@/components/weekly-plan/suggestion-list/suggestion-list'
-import { WeekGrid } from '@/components/weekly-plan/week-grid/week-grid'
-import { placeMeal } from './place-meal'
+import { loadDesktopWeek } from '@/components/weekly-plan/desktop-week/load-desktop-week'
+import { WeekDayTabs } from '@/components/weekly-plan/week-day-tabs/week-day-tabs'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSavePlanSlots } from '@/hooks/use-save-plan-slots'
+import { LARGE_SCREEN } from '@/lib/breakpoints'
+import { placeMeal } from './place-meal'
+import { toMealChoices, type SuggestionsState, type WeekViewProps } from './week-view'
+
+const DesktopWeek = lazy(loadDesktopWeek)
 
 export function WeekPlanner({ weekStart }: { weekStart: string }) {
   const { data: meals } = useSuspenseQuery(mealsQueryOptions)
   const { data: plan } = useSuspenseQuery(planQueryOptions(weekStart))
-  const { data: suggestions } = useSuspenseQuery(planSuggestionsQueryOptions(weekStart))
+  // Not a suspense query: the week shows while suggestions load, and if they fail.
+  const suggestionsQuery = useQuery(planSuggestionsQueryOptions(weekStart))
   const mealsById = useMemo(() => new Map(meals.map((meal) => [meal.id, meal])), [meals])
-  const days = daysFrom(weekStart)
+  const isLargeScreen = useMediaQuery(LARGE_SCREEN)
   const [message, setMessage] = useState('')
-
   const save = useSavePlanSlots(weekStart, showSaveError)
 
   function showSaveError() {
     setMessage("Couldn't save your week. Please try again.")
   }
 
-  function findMeal(id: unknown) {
-    return typeof id === 'string' ? mealsById.get(id) : undefined
+  function retrySuggestions() {
+    void suggestionsQuery.refetch()
   }
 
-  function handleDragEnd({ operation, canceled }: DragEndEvent) {
-    const { source, target } = operation
-    if (canceled || !source || !target || !isSlotId(target.id)) return
-    const meal = findMeal(source.id)
-    if (!meal) return
-
-    const result = placeMeal(plan.slots, target.id, meal, mealsById)
+  function placeInSlot(slotId: SlotId, meal: Meal) {
+    const result = placeMeal(plan.slots, slotId, meal, mealsById)
     if (result.slots !== plan.slots) save.mutate({ weekStart, slots: result.slots })
     setMessage(result.message)
   }
 
-  function renderDragOverlay(source: { id: unknown }) {
-    const meal = findMeal(source.id)
-    return meal ? <MealCard meal={meal} showMealTypes /> : null
+  function getSuggestions(): SuggestionsState {
+    if (suggestionsQuery.data) {
+      return { status: 'success', choices: toMealChoices(suggestionsQuery.data, mealsById) }
+    }
+    if (suggestionsQuery.isError) return { status: 'error', retry: retrySuggestions }
+    return { status: 'pending' }
+  }
+
+  const suggestions = getSuggestions()
+  const weekView: WeekViewProps = {
+    days: daysFrom(weekStart),
+    slots: plan.slots,
+    mealsById,
+    suggestions,
+    onPlace: placeInSlot,
   }
 
   return (
-    <DragDropProvider onDragEnd={handleDragEnd}>
+    <>
       <p role="status" className="min-h-6 text-sm text-ink-muted">
         {message}
       </p>
 
-      <div className="mt-2 grid gap-6 lg:grid-cols-4">
-        <WeekGrid days={days} slots={plan.slots} mealsById={mealsById} className="lg:col-span-3" />
-        <SuggestionList
-          suggestions={suggestions}
-          mealsById={mealsById}
-          className="max-h-96 lg:sticky lg:top-4 lg:max-h-screen lg:self-start"
-        />
-      </div>
-
-      <DragOverlay dropAnimation={null}>{renderDragOverlay}</DragOverlay>
-    </DragDropProvider>
+      {isLargeScreen ? (
+        // A lazy component: while it loads the route shows WeekPlanSkeleton, and a failed
+        // download shows the route's error page (the loader normally downloads it first).
+        <DesktopWeek {...weekView} />
+      ) : (
+        <WeekDayTabs {...weekView} />
+      )}
+    </>
   )
 }

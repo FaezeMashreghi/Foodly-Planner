@@ -5,10 +5,7 @@ import { ChipList } from '@/components/ui/chip-list/chip-list'
 
 type MealCardProps = {
   meal: Meal
-  /** Shows "Breakfast / Lunch / Dinner" labels; not needed inside a meal slot. */
   showMealTypes?: boolean
-  /** A small control on the bottom line, right-aligned. It sits next to the content, not
-   *  inside it, so the content can itself be interactive (e.g. a drag handle). */
   action?: ReactNode
   contentRef?: Ref<HTMLDivElement>
   contentClassName?: string
@@ -32,7 +29,7 @@ export function MealCard({
     ) : null
 
   return (
-    <div className="rounded-control border border-line bg-surface">
+    <div className="@container rounded-control border border-line bg-surface">
       <div
         ref={contentRef}
         className={`flex items-start gap-3 rounded-control p-2 ${contentClassName}`}
@@ -50,10 +47,9 @@ export function MealCard({
         </div>
       </div>
       {action && (
-        // Lined up with the text above: 8px padding + 48px emoji + 12px gap = pl-17.
-        <div className="flex items-center justify-between gap-2 pr-1 pl-17">
-          {mealTypeList ?? <span />}
-          {action}
+        <div className="flex flex-wrap items-center justify-between gap-x-2 px-1 @xs:pl-17">
+          {mealTypeList}
+          <div className="ml-auto">{action}</div>
         </div>
       )}
     </div>
