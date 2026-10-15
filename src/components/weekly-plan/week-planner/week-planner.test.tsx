@@ -3,31 +3,18 @@ import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { Suspense } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Meal } from '@shared/meal/meal'
 import { apiFetch } from '@/api/foodly/client'
 import { mealsQueryOptions } from '@/api/foodly/meals'
 import { planQueryOptions, planSuggestionsQueryOptions } from '@/api/foodly/plan'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { expectNoAxeViolations } from '@/test/axe'
+import { porridge } from '@/test/meals'
 import { WeekPlanner } from './week-planner'
 
 vi.mock('@/api/foodly/client', () => ({ apiFetch: vi.fn() }))
 vi.mock('@/hooks/use-media-query', () => ({ useMediaQuery: vi.fn() }))
 
 const WEEK_START = '2026-10-12'
-
-const porridge: Meal = {
-  id: 'porridge',
-  name: 'Porridge',
-  emoji: '🥣',
-  mealTypes: ['Breakfast'],
-  cuisine: 'international',
-  difficulty: 'easy',
-  prepMinutes: 10,
-  servings: 1,
-  ingredients: [],
-  source: 'seed',
-}
 
 const SUGGESTIONS = { Breakfast: ['porridge'], Lunch: [], Dinner: ['porridge'] }
 

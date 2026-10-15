@@ -1,28 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import type { Meal } from '@shared/meal/meal'
-import type { SuggestionsState } from '@/components/weekly-plan/week-planner/week-view'
+import type { SuggestionsState } from '@/components/weekly-plan/week-view'
 import { expectNoAxeViolations } from '@/test/axe'
+import { omelette, porridge } from '@/test/meals'
 import { MealSlot, type MealSlotProps } from './meal-slot'
 
 // The cards have Recipe buttons; the mock keeps Cognito and the backend out of the test.
 vi.mock('@/api/foodly/client', () => ({ apiFetch: vi.fn() }))
-
-const porridge: Meal = {
-  id: 'porridge',
-  name: 'Porridge',
-  emoji: '🥣',
-  mealTypes: ['Breakfast'],
-  cuisine: 'international',
-  difficulty: 'easy',
-  prepMinutes: 10,
-  servings: 1,
-  ingredients: [],
-  source: 'seed',
-}
-
-const omelette: Meal = { ...porridge, id: 'omelette', name: 'Omelette', emoji: '🍳' }
 
 const suggestions: SuggestionsState = {
   status: 'success',
