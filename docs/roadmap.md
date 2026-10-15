@@ -16,10 +16,10 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 ## Release and deploy (single-page app)
 
 - [x] **Commit `src/routeTree.gen.ts`**, so `tsc` works on a fresh machine (CI).
-- [ ] **Reload on stale code:** listen for Vite's `vite:preloadError` event and reload the page once, so users with an old tab get the new version instead of "Failed to fetch dynamically imported module".
+- [x] **Reload on stale code:** on Vite's `vite:preloadError` event the page reloads once, so users with an old tab get the new version instead of "Failed to fetch dynamically imported module" ([`reload-on-stale-code.ts`](../src/lib/reload-on-stale-code.ts), decision 27).
 - [x] **SPA fallback:** an Amplify rewrite rule (`</^[^.]+$/>` → `/index.html`, `200`) sends page URLs (no dot) to the app, so opening or refreshing `/weekly-plan` works. Amplify's default "every 404 → `index.html`" rule was removed: it hides missing JS and image files.
 - [x] **Caching:** hashed assets (`/assets/**`) get `public, max-age=31536000, immutable` from [`customHttp.yml`](../customHttp.yml); `index.html` keeps Amplify's `max-age=0`, so the browser always checks it and learns the new asset names after a deploy.
-- [ ] **Open tabs after a deploy:** check whether Amplify still serves the previous build's hashed files; if not, the "reload on stale code" item above matters more.
+- [x] **Open tabs after a deploy:** Amplify skew protection is on for `main`: each browser keeps getting its deployment's files for a week (decision 27).
 - [ ] **One build per environment:** `VITE_` values are baked in at build time, so each environment needs its own build, with values from CI settings.
 - [x] **Security headers** in [`customHttp.yml`](../customHttp.yml): a Content Security Policy (`script-src 'self'`, `connect-src` only our API and Cognito, `style-src` with `'unsafe-inline'` because dnd-kit adds a `<style>` tag, `img-src` with `data:` for Vite's inlined images, `frame-ancestors 'none'`), HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`. This protects the tokens in `localStorage` (decision 5). Checked in a browser with no CSP errors. The API address is written in the CSP by hand: update it if the API URL changes.
 - [x] **CORS:** the Amplify address is in `ALLOWED_ORIGINS` in `infra/foodly-stack.ts`, next to `localhost:5173`.

@@ -322,10 +322,13 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 
 - A rewrite rule sends page URLs (no dot) to `index.html`; missing files stay a real `404`.
 - [`customHttp.yml`](../customHttp.yml) adds a Content Security Policy and other security headers, and a one-year `immutable` cache to the hashed assets.
+- **Old tabs after a deploy:** pages and drag and drop are separate code files with hashed names, and a deploy removes the old ones, so a tab opened before it would fail to load them. Two layers:
+  - **Skew protection** on the `main` branch (Amplify console → App settings → Branch settings → Actions; free). Amplify keeps each deployment's files for a week and pins each browser to its deployment with a `_dpl` cookie. The cookie is shared by all tabs, so a tab older than the newest one opened can still miss files.
+  - **Reload once** ([`reload-on-stale-code.ts`](../src/lib/reload-on-stale-code.ts)): on Vite's `vite:preloadError`, the page reloads and gets the new file names. If loading fails again within 10 s it isn't stale code (offline?), so the route's error page shows instead of a reload loop.
 
 **Instead of:** S3 + CloudFront in CDK (full control but more to build; on the roadmap), Amplify auto-build (a failing commit could go live), Vercel or Netlify (a second provider).
 
-**Trade-off:** Amplify is set up in the console; the API address is typed into the CSP by hand; the site and API are on different domains, so CORS stays.
+**Trade-off:** Amplify is set up in the console (skew protection included); the API address is typed into the CSP by hand; the site and API are on different domains, so CORS stays.
 
 ## 28. Plan history: one query per user, native disclosure, list loads after the page
 
