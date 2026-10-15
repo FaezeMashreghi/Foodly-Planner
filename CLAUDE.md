@@ -34,7 +34,8 @@ src/                      ← React frontend (client-side rendered)
 ├── components/           ← all React components (routes/ only does routing); styles live in each .tsx
 │   ├── ui/               ← generic building blocks used anywhere (text-field/…)
 │   ├── auth/             ← components for the auth pages (sign-in-form/…)
-│   ├── weekly-plan/      ← the planner (grid, suggestions, meal cards, recipe dialog)
+│   ├── weekly-plan/      ← the planner: day tabs + Add/Change dialog on all screens; drag and
+│   │                       drop in desktop-week/, loaded lazily on large screens only (decision 29)
 │   ├── plan-questions/   ← the plan questions flow (questions → AI → review)
 │   └── <area>/           ← later: preferences/…
 ├── hooks/                ← shared React hooks, kebab-case files (use-form.ts: form state + validation)
@@ -130,14 +131,15 @@ Tailwind's default spacing, `text-sm`/`text-base` sizes, and font weights are st
 
 ### Recipes
 
-| Class             | Element                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------- |
-| `btn`             | Shared button base (usually use a variant below)                                                  |
-| `btn-primary`     | Main action. Works on `<button>` and on `<Link>`/`<a>`                                            |
-| `btn-secondary`   | Secondary action. Works on `<button>` and on `<Link>`/`<a>`                                       |
-| `link`            | Text link (brand color, underlined so it isn't shown by color alone). Works on `<Link>` and `<a>` |
-| `card`            | Surface container, on any element (`<main>`, `<section>`…)                                        |
-| `auth-background` | Auth page background: `canvas` color, illustration from `lg` up (AVIF/WebP via `image-set()`)     |
+| Class             | Element                                                                                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `btn`             | Shared button base (usually use a variant below)                                                                                                                                       |
+| `btn-primary`     | Main action. Works on `<button>` and on `<Link>`/`<a>`                                                                                                                                 |
+| `btn-secondary`   | Secondary action. Works on `<button>` and on `<Link>`/`<a>`                                                                                                                            |
+| `link`            | Text link (brand color, underlined so it isn't shown by color alone). Works on `<Link>` and `<a>`                                                                                      |
+| `card`            | Surface container, on any element (`<main>`, `<section>`…)                                                                                                                             |
+| `skeleton`        | Grey pulsing placeholder shape while content loads; size it with utilities (`skeleton h-20`). Put `aria-hidden` on the shapes and announce loading with a `role="status"` text instead |
+| `auth-background` | Auth page background: `canvas` color, illustration from `lg` up (AVIF/WebP via `image-set()`)                                                                                          |
 
 ### Components
 
@@ -150,6 +152,7 @@ Tailwind's default spacing, `text-sm`/`text-base` sizes, and font weights are st
 | `<Dialog>`        | `src/components/ui/dialog/dialog.tsx`                 | Every modal. Native `<dialog>` with `showModal()` (top layer, page blocked, Esc, focus in and back). Props: `open`, `onClose`, required `title` (names the dialog), `children`. Portaled to `<body>`; closes on a backdrop click; the page can't scroll behind it                                                                                                     |
 | `<ChipList>`      | `src/components/ui/chip-list/chip-list.tsx`           | Every row of small green tags (meal types, ingredients, cuisines, recipe extras). `chips` is a list of `{ id, label, emoji? }` (emoji hidden from screen readers); `size` `small` or `medium`; optional `label` names the list. Renders a real list (`role="list"`)                                                                                                   |
 | `<RadioGroup>`    | `src/components/ui/radio-group/radio-group.tsx`       | Every question with one answer from a short list. Native `<fieldset>` + `<legend>` + radio buttons (arrow keys come free). `legend` names the group (can be a heading); optional `hint` (linked with `aria-describedby`); `options` is a list of `{ value, label }`; `value` + `onChange`. Each row is a whole 44px label; the chosen one is highlighted              |
+| `<PillButton>`    | `src/components/ui/pill-button/pill-button.tsx`       | Small actions on a card (Recipe, Change, Choose): a 44px-high button with a smaller visible pill. `variant` `primary` or `secondary`; optional `icon` (hidden from screen readers) and `hiddenText` (screen-reader-only words after the label, so repeated buttons get distinct names: "Choose Omelette")                                                             |
 | `<FormError>`     | `src/components/ui/form-error/form-error.tsx`         | A message for the whole form (e.g. from Cognito: "Incorrect email or password"). `role="alert"`, so screen readers announce it when it appears. Renders nothing without a `message`. Put it at the top of the `<form>`                                                                                                                                                |
 | `<AppLogo>`       | `src/components/ui/app-logo/app-logo.tsx`             | The app name "Foodly" with its icon (decorative, `alt=""`). Used in the app header and on the auth pages; wrap it in a `<Link>` or `<p>` as needed                                                                                                                                                                                                                    |
 

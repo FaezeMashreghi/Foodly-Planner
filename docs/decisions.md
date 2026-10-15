@@ -21,7 +21,7 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 | 12  | [Code formatting: Prettier, with ESLint for correctness](#12-code-formatting-prettier-with-eslint-for-correctness)                                                | Current           |
 | 13  | [Password fields: one field with a Show/Hide button, no "confirm password"](#13-password-fields-one-field-with-a-showhide-button-no-confirm-password)             | Current           |
 | 14  | [Testing: Vitest, with Testing Library for components](#14-testing-vitest-with-testing-library-for-components)                                                    | Current           |
-| 15  | [Drag and drop in the weekly plan: dnd-kit](#15-drag-and-drop-in-the-weekly-plan-dnd-kit)                                                                         | Current           |
+| 15  | [Drag and drop in the weekly plan: dnd-kit](#15-drag-and-drop-in-the-weekly-plan-dnd-kit)                                                                         | Updated by 29     |
 | 16  | [Backend: Lambda + API Gateway HTTP API, created with AWS CDK](#16-backend-lambda--api-gateway-http-api-created-with-aws-cdk)                                     | Updated by 18, 24 |
 | 17  | [Meal planning: a meal catalogue, AI only to understand the user](#17-meal-planning-a-meal-catalogue-ai-only-to-understand-the-user)                              | Updated by 22     |
 | 18  | [A small backend: one Lambda, DynamoDB, Bedrock](#18-a-small-backend-one-lambda-dynamodb-bedrock)                                                                 | Updated by 24     |
@@ -35,6 +35,7 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 | 26  | [CI/CD: GitHub Actions with OIDC, no AWS keys stored](#26-cicd-github-actions-with-oidc-no-aws-keys-stored)                                                       | Current           |
 | 27  | [Frontend hosting: Amplify Hosting, built only after CI](#27-frontend-hosting-amplify-hosting-built-only-after-ci)                                                | Current           |
 | 28  | [Plan history: one query per user, native disclosure, list loads after the page](#28-plan-history-one-query-per-user-native-disclosure-list-loads-after-the-page) | Current           |
+| 29  | [Weekly plan on phones: tap to place, drag and drop only on large screens](#29-weekly-plan-on-phones-tap-to-place-drag-and-drop-only-on-large-screens)            | Current           |
 
 ## 1. Backend on AWS with a single database
 
@@ -178,6 +179,8 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Trade-off:** jsdom has no layout or real CSS, so target sizes and color contrast need a real browser: Playwright is on the roadmap.
 
 ## 15. Drag and drop in the weekly plan: dnd-kit
+
+> **Updated by 29:** meals are also placed with an Add/Change button (WCAG 2.5.7), and dnd-kit loads only on large screens.
 
 **Chosen:** dnd-kit (`@dnd-kit/react`) to drag meals into slots.
 
@@ -335,3 +338,17 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Instead of:** a `Scan` (reads every user's rows), "previous/next week" buttons in the planner (one week at a time), an `aria-expanded` button with React state (the same result written by hand), a 7 × 3 table per week (mostly empty cells, too wide on a phone), awaiting the data in the loader (blank page until the slowest request).
 
 **Trade-off:** no paging: one `Query` returns up to 1 MB, which is hundreds of weeks per user, so `LastEvaluatedKey` isn't handled yet. Weeks can't be opened in the planner from here. A meal removed from the catalogue shows as "Meal no longer available".
+
+## 29. Weekly plan on phones: tap to place, drag and drop only on large screens
+
+**Chosen:** every slot has an **Add** button (or **Change** when filled) that opens a `<Dialog>` with that meal type's suggestions; **Choose** places the meal. This is the only way on small screens. From `lg` (`64rem`) up, the whole week sits next to the suggestion list with drag and drop as well.
+
+- **dnd-kit only on large screens:** `DesktopWeek` and everything that imports `@dnd-kit/react` (`DroppableMealSlot`, `DraggableMeal`, `SuggestionList`) are loaded with `React.lazy(() => import(…))`, so Vite puts them in their own chunk. The weekly-plan chunk went from 36 KB to under 2 KB gzipped; phones never download the 33 KB `desktop-week` chunk. The route loader downloads it alongside the data on large screens and waits for it, so the page opens with drag and drop ready. Shared components (`MealSlot`, `DaySection`, `WeekPlanner`) must never import dnd-kit, or it silently returns to the main chunk: check `desktop-week-*.js` after `vite build`.
+- **Suggestions don't block the page:** the loader waits only for the meals and the plan, and starts the suggestions request without waiting (`useQuery`, not `useSuspenseQuery`). While it loads or after it fails, the week shows with its meals; the suggestion column and the Add/Change dialog say "Loading suggestions…" or "Couldn't load suggestions." with **Try again**. Same idea as decision 28: what's essential blocks the page, extras load on their own.
+- **Skeleton while loading:** the route's `pendingComponent` shows the planner's shape (`WeekPlanSkeleton`, the `skeleton` recipe) from 200 ms (`pendingMs`, default 1 s) for at least 500 ms (`pendingMinMs`), instead of a blank page and then "Loading…". Same layout as the real page, so nothing jumps when it arrives (CLS). Shapes are `aria-hidden`; a visually hidden `role="status"` says "Loading your week…".
+- **Split by screen width, not device:** the same `matchMedia` query as the layout (`useMediaQuery`), so tablets, narrow windows and landscape phones get the layout that fits.
+- **Focus:** after placing a meal in an empty slot, focus moves to its new Change button (the Add button it came from is gone).
+
+**Instead of:** dragging on touch (cards had to block scrolling with `touch-none`, the drop slots were off screen above the list, and only the open day could take a drop), user-agent detection (unreliable, and the question is space, not device), loading dnd-kit everywhere (most of the page's JavaScript, unused on phones).
+
+**Trade-off:** two week layouts to keep in step, sharing `DaySection` and `MealSlot`. Resizing a window across `lg` swaps the layout (the plan lives in the Query cache, so nothing is lost). No special handling for the rare cases, on purpose: after widening a window past `lg`, the route's skeleton shows while the chunk downloads, and if the download fails the route's error page shows (its Try again runs the loader, and so the download, again).

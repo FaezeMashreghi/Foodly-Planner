@@ -1,11 +1,11 @@
 # Foodly Planner
 
-A weekly meal planner. You tell Foodly in your own words what's in your fridge, what you feel like and how much time you have. An AI turns that into structured answers, the app suggests matching meals, and you drag them into the days of your week. Each meal has a recipe written by AI once and shared by everyone.
+A weekly meal planner. You tell Foodly in your own words what's in your fridge, what you feel like and how much time you have. An AI turns that into structured answers, the app suggests matching meals, and you add them to the days of your week (tap on a phone, tap or drag on a desktop). Each meal has a recipe written by AI once and shared by everyone.
 
 - **Live:** [main.d1wh7bghb5zvxn.amplifyapp.com](https://main.d1wh7bghb5zvxn.amplifyapp.com)
 - **Demo account:** `demo@foodly.com` / `*Demo1234*` (no sign-up needed)
 - **Meals follow my taste:** the catalogue of ~100 meals was built around what I like to cook, so suggestions lean towards Persian and Turkish dishes, with some international, Asian and Dutch ones.
-- **Best on desktop:** the layout is responsive, but I've tested it mostly on desktop, and the mobile experience still needs polish.
+- **Mobile:** the weekly plan has its own phone layout (tap to place; drag and drop loads only on large screens). Other pages still need testing on real phones.
 
 <!-- TODO: screenshot or short GIF of the weekly planner -->
 
@@ -55,11 +55,10 @@ A few of the trade-offs I made:
 ## What's next
 
 1. **Open the current plan after sign-in**, instead of always starting with the questions.
-2. **Place a meal without dragging** ("Move to…" button), required by WCAG 2.2. This is the known accessibility gap.
-3. **Playwright tests of the main flow** in a real browser, run in CI.
-4. **Sentry and Core Web Vitals** from real users, to find what to improve.
-5. **Dislike a suggestion and get another one.**
-6. **Mobile polish:** test every page on real phones and improve the small-screen layouts.
+2. **Playwright tests of the main flow** in a real browser, run in CI.
+3. **Sentry and Core Web Vitals** from real users, to find what to improve.
+4. **Dislike a suggestion and get another one.**
+5. **Mobile polish:** test every page on real phones and improve the small-screen layouts.
 
 ## Running it
 
