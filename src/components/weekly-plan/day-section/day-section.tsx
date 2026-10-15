@@ -1,14 +1,27 @@
+import type { ComponentType } from 'react'
 import { MEAL_TYPES, type Meal } from '@shared/meal/meal'
 import { toSlotId, type Day, type PlanSlots } from '@shared/week-plan/week-plan'
-import { MealSlot } from '@/components/weekly-plan/meal-slot/meal-slot'
+import { MealSlot, type MealSlotProps } from '@/components/weekly-plan/meal-slot/meal-slot'
+import type { PlaceMealInSlot, SuggestionsState } from '@/components/weekly-plan/week-view'
 
 type DaySectionProps = {
   day: Day
   slots: PlanSlots
-  mealsById: Map<string, Meal>
+  mealsById: ReadonlyMap<string, Meal>
+  suggestions: SuggestionsState
+  onPlace: PlaceMealInSlot
+  /** `DroppableMealSlot` on large screens; plain `MealSlot` keeps dnd-kit out of phones. */
+  slotComponent?: ComponentType<MealSlotProps>
 }
 
-export function DaySection({ day, slots, mealsById }: DaySectionProps) {
+export function DaySection({
+  day,
+  slots,
+  mealsById,
+  suggestions,
+  onPlace,
+  slotComponent: Slot = MealSlot,
+}: DaySectionProps) {
   const headingId = `day-section-${day.toLowerCase()}`
 
   return (
@@ -19,14 +32,15 @@ export function DaySection({ day, slots, mealsById }: DaySectionProps) {
 
       <div className="grid gap-3 md:grid-cols-3">
         {MEAL_TYPES.map((mealType) => {
-          const slotId = toSlotId(day, mealType)
-          const mealId = slots[slotId]
+          const mealId = slots[toSlotId(day, mealType)]
           return (
-            <MealSlot
+            <Slot
               key={mealType}
-              id={slotId}
+              day={day}
               mealType={mealType}
               meal={mealId ? mealsById.get(mealId) : undefined}
+              suggestions={suggestions}
+              onPlace={onPlace}
             />
           )
         })}

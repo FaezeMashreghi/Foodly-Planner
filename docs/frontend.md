@@ -43,4 +43,5 @@ Accessibility is a main goal, so components are hand-written (no component libra
 - The design tokens only allow colors that pass WCAG AA contrast ([decision 10](decisions.md#10-visual-design-palette-and-font-from-the-illustration)). One focus ring style for everything, 44 px minimum targets, and reduced motion respected.
 - Focus is managed: it moves to the new question in the wizard and to the recipe when it loads, and goes back to the opener when a dialog closes. Status changes use live regions.
 - Checked by hand with the keyboard and VoiceOver, and automatically with axe in CI.
-- **Known gaps:** placing a meal without dragging (WCAG 2.2, 2.5.7) and dnd-kit's default screen reader messages. Both are first on the roadmap.
+- Meals can be placed without dragging (WCAG 2.2, 2.5.7): every slot has an Add/Change button that opens the suggestions in a dialog ([decision 29](decisions.md#29-weekly-plan-on-phones-tap-to-place-drag-and-drop-only-on-large-screens)).
+- **Known gap:** dnd-kit's default screen reader messages (see the roadmap).

@@ -1,0 +1,5 @@
+/* A grey placeholder shape while content loads. Size it with utilities: `skeleton h-20`.
+   Hide it from screen readers (aria-hidden) and announce the loading with role="status" instead. */
+@utility skeleton {
+  @apply animate-pulse rounded-control bg-line;
+}

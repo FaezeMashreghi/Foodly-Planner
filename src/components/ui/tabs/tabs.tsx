@@ -12,6 +12,7 @@ type TabsProps<T extends string> = {
   selectedId: T
   onSelect: (id: T) => void
   children: ReactNode
+  tabListClassName?: string
 }
 
 export function Tabs<T extends string>({
@@ -20,6 +21,7 @@ export function Tabs<T extends string>({
   selectedId,
   onSelect,
   children,
+  tabListClassName = '',
 }: TabsProps<T>) {
   const baseId = useId()
   const panelId = `${baseId}-panel`
@@ -44,7 +46,7 @@ export function Tabs<T extends string>({
 
   return (
     <div className="space-y-4">
-      <div role="tablist" aria-label={label} className="flex gap-1">
+      <div role="tablist" aria-label={label} className={`flex gap-1 ${tabListClassName}`}>
         {tabs.map((tab, index) => {
           const selected = tab.id === selectedId
           return (

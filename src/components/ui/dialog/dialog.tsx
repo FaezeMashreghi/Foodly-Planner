@@ -25,7 +25,10 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onClose={(event) => {
+        // React passes events up through portals: closing a dialog opened from this one must not close this one too.
+        if (event.target === event.currentTarget) onClose()
+      }}
       onClick={(event) => {
         // A click on the <dialog> itself (not its content) is a click on the backdrop.
         if (event.target === event.currentTarget) onClose()

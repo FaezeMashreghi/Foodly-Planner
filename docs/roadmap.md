@@ -9,18 +9,17 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 1. **A demo account** for visitors and reviewers.
 2. **Open the current plan after sign-in:** today `/` always goes to the plan questions. If the user has a plan whose 7 days include today (or one starting in the next 6 days), open it in the weekly plan instead. Plans can start on any day, so the browser can't work out the `weekStart`: add `GET /plan/current?today=2026-10-07` (the browser sends its own date, because "today" depends on the user's timezone), a DynamoDB `Query` on `userId` with `weekStart BETWEEN today - 6 AND today + 6`, `Limit: 1` (the earliest, so a plan in progress wins over an upcoming one). `/weekly-plan` without `?start` (the nav link) should use the same lookup; today it opens the plan starting this Monday.
 3. **Custom domain** for `foodlyplanner.com`: Cloudflare Registrar (~$10.50/year, sold at cost, free DNS) rather than Route 53 ($16/year + $6/year for the hosted zone). In Amplify choose manual configuration, add its records in Cloudflare as **DNS only** (grey cloud, not proxied, or the certificate check fails), then add the new origin to `ALLOWED_ORIGINS` and the CSP.
-4. **"Move to…" button** on each meal card, so meals can be placed without dragging (WCAG 2.2, 2.5.7), with a `role="status"` message ("Added to Monday dinner") and a test. Decision 15 promised it, but it isn't built yet.
-5. **IAM Identity Center admin user** for daily AWS work. My CLI still signs in as the root user (with MFA and temporary credentials), which decision 9 says to avoid.
-6. **Backend tests for `index.mjs`**: routing, input validation (`400`), the daily limit (`429`), and the user id coming from the token.
-7. **One list of ingredient and cuisine ids:** `understand.mjs` still has its own copy of the lists in `shared/meal/`. CDK's bundler can import `shared/` now. Converting the backend to TypeScript would fix this too.
+4. **IAM Identity Center admin user** for daily AWS work. My CLI still signs in as the root user (with MFA and temporary credentials), which decision 9 says to avoid.
+5. **Backend tests for `index.mjs`**: routing, input validation (`400`), the daily limit (`429`), and the user id coming from the token.
+6. **One list of ingredient and cuisine ids:** `understand.mjs` still has its own copy of the lists in `shared/meal/`. CDK's bundler can import `shared/` now. Converting the backend to TypeScript would fix this too.
 
 ## Release and deploy (single-page app)
 
 - [x] **Commit `src/routeTree.gen.ts`**, so `tsc` works on a fresh machine (CI).
-- [ ] **Reload on stale code:** listen for Vite's `vite:preloadError` event and reload the page once, so users with an old tab get the new version instead of "Failed to fetch dynamically imported module".
+- [ ] **Reload on stale code**, only if Sentry shows it is needed. After deploys, search Sentry for "Failed to fetch dynamically imported module" (Chrome), "Importing a module script failed" (Safari) and "error loading dynamically imported module" (Firefox). If they show up, restore `reload-on-stale-code.ts` and its test from commit `d117d27`: on Vite's `vite:preloadError` the page reloads once (a 10 s `sessionStorage` guard stops a loop). Built once and removed as too much while skew protection covers most cases (decision 27).
 - [x] **SPA fallback:** an Amplify rewrite rule (`</^[^.]+$/>` → `/index.html`, `200`) sends page URLs (no dot) to the app, so opening or refreshing `/weekly-plan` works. Amplify's default "every 404 → `index.html`" rule was removed: it hides missing JS and image files.
 - [x] **Caching:** hashed assets (`/assets/**`) get `public, max-age=31536000, immutable` from [`customHttp.yml`](../customHttp.yml); `index.html` keeps Amplify's `max-age=0`, so the browser always checks it and learns the new asset names after a deploy.
-- [ ] **Open tabs after a deploy:** check whether Amplify still serves the previous build's hashed files; if not, the "reload on stale code" item above matters more.
+- [x] **Open tabs after a deploy:** Amplify skew protection is on for `main`: each browser keeps getting its deployment's files for a week (decision 27).
 - [ ] **One build per environment:** `VITE_` values are baked in at build time, so each environment needs its own build, with values from CI settings.
 - [x] **Security headers** in [`customHttp.yml`](../customHttp.yml): a Content Security Policy (`script-src 'self'`, `connect-src` only our API and Cognito, `style-src` with `'unsafe-inline'` because dnd-kit adds a `<style>` tag, `img-src` with `data:` for Vite's inlined images, `frame-ancestors 'none'`), HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`. This protects the tokens in `localStorage` (decision 5). Checked in a browser with no CSP errors. The API address is written in the CSP by hand: update it if the API URL changes.
 - [x] **CORS:** the Amplify address is in `ALLOWED_ORIGINS` in `infra/foodly-stack.ts`, next to `localhost:5173`.
@@ -53,7 +52,7 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 - [ ] A must-have meal that isn't in the catalogue → the AI creates it once and saves it to `meals`.
 - [ ] Personal suggestions from each user's history (favourites, recently eaten).
 - [ ] Preferences page and Google sign-in.
-- [ ] **Mobile polish:** the layout is responsive, but it has been tested mostly on desktop. Test every page on real phones (iOS Safari and Android Chrome, including VoiceOver and TalkBack) and improve the small-screen layouts.
+- [ ] **Mobile polish:** the weekly plan has a phone layout now (decision 29). Test every page on real phones (iOS Safari and Android Chrome, including VoiceOver and TalkBack) and improve the small-screen layouts.
 
 ## Accessibility
 
@@ -66,7 +65,7 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 ## Tests still missing (critical scenarios)
 
 - [ ] **Playwright tests of the main flow in CI:** sign in → plan questions → weekly plan → place a meal → reload and it's still there, in Chrome, Firefox and WebKit, with `@axe-core/playwright` on each page. They run against staging before every production deploy, with a test user whose password is a GitHub secret and the AI answers faked (or a fixed test prompt) so runs are repeatable and cheap. Traces and screenshots are kept when a test fails.
-- [ ] **Place a meal without dragging** (once "Move to…" exists): the meal lands in the right slot, the status message says so, and a failed save says so too.
+- [ ] **Place a meal without dragging, whole flow:** `MealSlot` is tested (Add → Choose → focus on Change); still missing is `WeekPlanner` with `src/api/` mocked: the status message says so, and a failed save says so too.
 - [ ] **Sign up** then **confirm email**: "account already exists", a wrong or expired code, then signed in.
 - [ ] **Reset a forgotten password**: code sent, wrong code explained, new password rules.
 - [ ] **Plan questions end to end** (`PlanQuestionsFlow`, `src/api/` mocked): AI answers → review → start day → saved; a failed save shows an error and keeps the answers.
@@ -76,6 +75,7 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 
 - [ ] Run Lighthouse on the sign-in page. If the background image is the LCP element, preload it with `fetchpriority="high"`.
 - [ ] Preload the Nunito Latin font file only if Lighthouse shows it loading late (needs a small Vite plugin because of the hashed name).
+- [ ] **Prefetch drag and drop during the plan questions:** while the user answers, call `loadDesktopWeek()` (decision 29) so the weekly plan's loader finds it cached. Only on large screens (`LARGE_SCREEN`), when the browser is idle (`requestIdleCallback`), and not when the user saves data or is on a slow connection (`navigator.connection.saveData` / `effectiveType`; Chromium only, so treat "unknown" as fine). Today the loader downloads it alongside the data, which is fast enough; measure before and after.
 
 ## Code quality and design
 
