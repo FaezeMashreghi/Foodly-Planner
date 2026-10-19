@@ -15,7 +15,7 @@ src/                 React app (client-side only)
 ├── components/      ui/ (generic, accessible building blocks) and one folder per area
 ├── hooks/, lib/     shared hooks and helpers
 └── styles/          design tokens, fonts, base styles, recipes
-server/lambda/       the one Lambda: index.mjs (routes + validation), data/, suggest/, understand/, recipe/
+server/lambda/       the one Lambda: index.ts (routes + validation), data/, suggest/, understand/, recipe/
 shared/              types and rules used by both sides (meals, ingredients, validation)
 infra/               CDK app: FoodlyStack (the app) and GithubDeployStack (CI access)
 .github/workflows/   ci.yml (pull requests) and deploy.yml (main)

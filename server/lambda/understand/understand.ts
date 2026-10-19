@@ -1,12 +1,18 @@
-import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime'
-import { loadMeals } from '../data/meals.mjs'
+import {
+  BedrockRuntimeClient,
+  ConverseCommand,
+  type TokenUsage,
+  type Tool,
+} from '@aws-sdk/client-bedrock-runtime'
+import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import { loadMeals, type MealItem } from '../data/meals.ts'
 
 const bedrock = new BedrockRuntimeClient({})
-// The fallback is for eval.mjs, run on your machine; the Lambda gets it from infra.
+// The fallback is for eval.ts, run on your machine; the Lambda gets it from infra.
 export const MODEL_ID = process.env.MODEL_ID ?? 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
 const TOOL_NAME = 'save_answers'
 
-const INGREDIENTS_BY_CATEGORY = {
+const INGREDIENTS_BY_CATEGORY: Record<string, string> = {
   vegetable:
     'aubergine bell-pepper broccoli carrot cherry-tomato courgette cucumber edamame garlic green-bean green-chilli green-pea lettuce mushroom onion potato red-cabbage red-onion salad-mix spinach spring-onion sweet-corn sweet-potato tinned-tomato tomato',
   fruit: 'apple avocado banana blueberry date lemon lime orange pomegranate raisin strawberry',
@@ -32,7 +38,7 @@ const INGREDIENT_IDS = new Set(
 const CUISINE_IDS = new Set(CUISINES)
 
 const buildSystem = (
-  meals,
+  meals: MealItem[],
 ) => `You read what a user wrote about their coming week of meals and call ${TOOL_NAME} with structured data. The app shows the result to the user (they can edit it), then plain code scores a catalogue of meals with it.
 
 The user's text answers up to 4 questions, one per line: "Ingredients going off soon", "Food I feel like", "Cooking effort", "A dish I really want". Skipped questions are left out. People write casually, with typos, in English, Persian (script or Latin letters), Turkish, Dutch or a mix. Read the whole text: an allergy or a time limit can appear under any question.
@@ -124,9 +130,9 @@ ${CUISINES.join(', ')}
 
 ${meals.map((meal) => `${meal.id}: ${meal.name} [${meal.cuisine}]`).join('\n')}`
 
-const idList = (description) => ({ type: 'array', items: { type: 'string' }, description })
+const idList = (description: string) => ({ type: 'array', items: { type: 'string' }, description })
 
-const TOOL = {
+const TOOL: Tool = {
   toolSpec: {
     name: TOOL_NAME,
     description: 'Save what the user wants for their week of meals.',
@@ -174,14 +180,14 @@ const TOOL = {
 }
 
 // Built once per Lambda instance, then reused by every call it handles.
-let catalogue
+let catalogue: Promise<{ system: string; mealNames: Map<string, string> }> | undefined
 
 function getCatalogue() {
   catalogue ??= loadMeals().then(buildCatalogue).catch(forgetFailedCatalogue)
   return catalogue
 }
 
-function buildCatalogue(meals) {
+function buildCatalogue(meals: MealItem[]) {
   // Sorted so the prompt stays the same text between instances (needed for prompt caching).
   const sorted = meals.toSorted((a, b) => a.id.localeCompare(b.id))
   return {
@@ -190,12 +196,15 @@ function buildCatalogue(meals) {
   }
 }
 
-function forgetFailedCatalogue(error) {
+function forgetFailedCatalogue(error: unknown): never {
   catalogue = undefined
   throw error
 }
 
-export async function understand(text, { onUsage } = {}) {
+export async function understand(
+  text: string,
+  { onUsage }: { onUsage?: (usage: TokenUsage | undefined) => void } = {},
+): Promise<PlanAnswers> {
   const { system, mealNames } = await getCatalogue()
   const response = await bedrock.send(
     new ConverseCommand({
@@ -209,18 +218,18 @@ export async function understand(text, { onUsage } = {}) {
   console.log('bedrock usage', JSON.stringify(response.usage))
   onUsage?.(response.usage)
   if (response.stopReason === 'max_tokens') console.warn('bedrock output cut off at maxTokens')
-  const input =
-    response.output?.message?.content?.find((block) => block.toolUse)?.toolUse?.input ?? {}
+  const input = (response.output?.message?.content?.find((block) => block.toolUse)?.toolUse
+    ?.input ?? {}) as Record<string, unknown>
   return clean(input, mealNames)
 }
 
 /** Checks answers sent by the app (the user may have edited them) the same way as the AI's. */
-export async function checkAnswers(input) {
+export async function checkAnswers(input: Record<string, unknown>) {
   const { mealNames } = await getCatalogue()
   return clean(input, mealNames)
 }
 
-function ids(value, allowed) {
+function ids(value: unknown, allowed: Set<string>) {
   if (!Array.isArray(value)) return []
   const valid = value
     .filter((id) => typeof id === 'string')
@@ -229,19 +238,19 @@ function ids(value, allowed) {
   return [...new Set(valid)]
 }
 
-function shortText(value) {
+function shortText(value: unknown) {
   if (typeof value !== 'string') return null
   const text = value.trim().slice(0, 100)
   return text || null
 }
 
-function minutes(value) {
+function minutes(value: unknown) {
   const number = typeof value === 'string' && value.trim() ? Number(value) : value
   if (typeof number !== 'number' || !Number.isFinite(number)) return null
   return Math.min(240, Math.max(5, Math.round(number)))
 }
 
-export function clean(input, mealNames) {
+export function clean(input: Record<string, unknown>, mealNames: Map<string, string>): PlanAnswers {
   const expiring = ids(input.expiring, INGREDIENT_IDS)
   const avoid = ids(input.avoid, INGREDIENT_IDS)
   const wantMore = ids(input.wantMore, INGREDIENT_IDS).filter(
@@ -252,7 +261,10 @@ export function clean(input, mealNames) {
       ? input.mustHaveMealId.trim()
       : null
   const notes = Array.isArray(input.notes)
-    ? input.notes.map(shortText).filter(Boolean).slice(0, 3)
+    ? input.notes
+        .map(shortText)
+        .filter((note) => note !== null)
+        .slice(0, 3)
     : []
 
   return {
@@ -264,7 +276,7 @@ export function clean(input, mealNames) {
     maxPrepMinutes: minutes(input.maxPrepMinutes),
     mustHaveMealId,
     mustHaveText:
-      shortText(input.mustHaveText) ?? (mustHaveMealId && mealNames.get(mustHaveMealId)),
+      shortText(input.mustHaveText) ?? (mustHaveMealId && mealNames.get(mustHaveMealId)) ?? null,
     notes,
   }
 }

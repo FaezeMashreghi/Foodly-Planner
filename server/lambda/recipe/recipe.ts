@@ -1,7 +1,10 @@
-import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime'
+import { BedrockRuntimeClient, ConverseCommand, type Tool } from '@aws-sdk/client-bedrock-runtime'
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
-import { db } from '../data/db.mjs'
-import { MEALS_TABLE as TABLE } from '../data/meals.mjs'
+import type { Recipe } from '@shared/meal/meal'
+import { db, isConditionFailed } from '../data/db.ts'
+import { MEALS_TABLE as TABLE, type MealItem } from '../data/meals.ts'
+
+type MealWithRecipe = MealItem & { recipe?: Recipe }
 
 const bedrock = new BedrockRuntimeClient({})
 const MODEL_ID = process.env.MODEL_ID
@@ -11,7 +14,7 @@ Build the recipe around the ingredients given. Add any spices, herbs and pantry 
 (oil, butter, salt, pepper, water…) the dish needs to taste right, and list them in extras.
 Write each step as one short instruction, in order. Include times and heat levels.`
 
-const TOOL = {
+const TOOL: Tool = {
   toolSpec: {
     name: 'save_recipe',
     description: 'Save the recipe for this meal.',
@@ -43,8 +46,9 @@ const TOOL = {
 }
 
 /** The saved recipe, or a new one from the AI, saved for everyone. null if the meal doesn't exist. */
-export async function getRecipe(mealId) {
-  const { Item: meal } = await db.send(new GetCommand({ TableName: TABLE, Key: { id: mealId } }))
+export async function getRecipe(mealId: string): Promise<Recipe | null> {
+  const { Item } = await db.send(new GetCommand({ TableName: TABLE, Key: { id: mealId } }))
+  const meal = Item as MealWithRecipe | undefined
   if (!meal) return null
   if (meal.recipe) return meal.recipe
 
@@ -61,14 +65,14 @@ export async function getRecipe(mealId) {
     )
     return recipe
   } catch (error) {
-    if (error.name !== 'ConditionalCheckFailedException') throw error
+    if (!isConditionFailed(error)) throw error
     // Someone saved a recipe first: return theirs, so everyone sees the same one.
     const { Item } = await db.send(new GetCommand({ TableName: TABLE, Key: { id: mealId } }))
-    return Item?.recipe ?? recipe
+    return (Item as MealWithRecipe | undefined)?.recipe ?? recipe
   }
 }
 
-async function writeRecipe(meal) {
+async function writeRecipe(meal: MealItem): Promise<Recipe> {
   const ingredients = meal.ingredients
     .map((item) => `- ${item.amount} ${item.unit} ${item.ingredientId}`)
     .join('\n')
@@ -85,9 +89,9 @@ async function writeRecipe(meal) {
   )
   console.log('bedrock usage (recipe)', JSON.stringify(response.usage))
 
-  const input =
-    response.output?.message?.content?.find((block) => block.toolUse)?.toolUse?.input ?? {}
-  const texts = (value, max) =>
+  const input = (response.output?.message?.content?.find((block) => block.toolUse)?.toolUse
+    ?.input ?? {}) as Record<string, unknown>
+  const texts = (value: unknown, max: number) =>
     Array.isArray(value)
       ? value
           .filter((item) => typeof item === 'string' && item.trim())
@@ -102,7 +106,7 @@ async function writeRecipe(meal) {
     extras: texts(input.extras, 15),
     steps,
     tips: texts(input.tips, 3),
-    model: MODEL_ID,
+    model: MODEL_ID ?? '',
     createdAt: new Date().toISOString(),
   }
 }

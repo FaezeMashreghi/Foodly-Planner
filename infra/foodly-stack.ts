@@ -56,7 +56,7 @@ export class FoodlyStack extends Stack {
     })
 
     const backend = new NodejsFunction(this, 'Backend', {
-      entry: path.join(import.meta.dirname, '../server/lambda/index.mjs'),
+      entry: path.join(import.meta.dirname, '../server/lambda/index.ts'),
       runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       memorySize: 256,
@@ -69,7 +69,12 @@ export class FoodlyStack extends Stack {
         CATALOG_TABLE: catalogTable.tableName,
         MODEL_ID: `eu.${HAIKU_MODEL}`,
       },
-      bundling: { format: OutputFormat.ESM, target: 'node22' },
+      bundling: {
+        format: OutputFormat.ESM,
+        target: 'node22',
+        // Has the @shared alias; esbuild would otherwise use the root tsconfig.json, which doesn't.
+        tsconfig: path.join(import.meta.dirname, '../tsconfig.node.json'),
+      },
       logGroup: new LogGroup(this, 'BackendLogs', {
         retention: RetentionDays.ONE_MONTH,
         removalPolicy: RemovalPolicy.DESTROY,

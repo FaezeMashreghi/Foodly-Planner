@@ -1,5 +1,5 @@
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb'
-import { db } from './db.mjs'
+import { db, isConditionFailed } from './db.ts'
 
 const USAGE_TABLE = process.env.USAGE_TABLE
 // DynamoDB deletes a day's counts on its own (TTL) once they can't be needed any more.
@@ -9,7 +9,7 @@ const KEEP_SECONDS = 2 * 24 * 60 * 60
  * Counts one call to a paid feature for the user today (UTC). Returns false, without counting,
  * when they already made `limit` calls today. One atomic write, so parallel calls can't go over.
  */
-export async function claimDailyCall(userId, feature, limit) {
+export async function claimDailyCall(userId: string, feature: string, limit: number) {
   try {
     await db.send(
       new UpdateCommand({
@@ -27,7 +27,7 @@ export async function claimDailyCall(userId, feature, limit) {
     )
     return true
   } catch (error) {
-    if (error.name === 'ConditionalCheckFailedException') return false
+    if (isConditionFailed(error)) return false
     throw error
   }
 }

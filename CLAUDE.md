@@ -47,13 +47,13 @@ src/                      ← React frontend (client-side rendered)
 └── main.tsx              ← creates the router and QueryClient, renders the app
 infra/                    ← AWS CDK: foodly-stack.ts describes the tables, Lambda, API (decision 24)
 server/lambda/            ← the one Lambda for all routes (decision 18), bundled by CDK from here
-├── index.mjs             ← entry: switches on the route, validates, reads/writes DynamoDB
-├── data/                 ← the one DynamoDB client (db.mjs) and the cached meals list (meals.mjs)
+├── index.ts              ← entry: switches on the route, validates, reads/writes DynamoDB
+├── data/                 ← the one DynamoDB client (db.ts), the cached meals (meals.ts) and
+│                           catalogue (catalog.ts: adds names to what's sent)
 ├── suggest/              ← suggestion scoring (plain code, unit-tested)
 ├── understand/           ← AI: turns the user's text into answers (Bedrock)
 └── recipe/               ← AI: writes a meal's recipe once and saves it
-shared/                   ← types and validation meant for both src/ and server/ (the Lambda is
-                            plain .mjs and imports none of it yet, so today only src/ uses it)
+shared/                   ← types and validation used by both src/ and server/
 └── validation/           ← pure rules, one folder each (email/email.ts, password/password.ts);
                             each returns an error message or undefined
 ```
@@ -69,7 +69,7 @@ shared/                   ← types and validation meant for both src/ and serve
 - **Components: one folder per component**, named in kebab-case, with a file of the same name: `src/components/ui/text-field/text-field.tsx`, `src/components/auth/sign-in-form/sign-in-form.tsx`. The component itself is a PascalCase named export (`export function TextField`). No `index.ts` re-export files: import the file directly. Files that belong to one component (e.g. a later `sign-in-form.test.tsx`) go in its folder. This includes small helper components: no second component inside a component's file, even a private one; give it its own folder (in the same area, or `ui/` if it's generic).
 - **Imports:** use `./` only for a file in the same folder (`./text-field`). Everything else uses a path alias: `@/` for `src/` (`@/components/ui/text-field/text-field`, `@/hooks/use-form`) and `@shared/` for `shared/` (`@shared/validation/email/email`). No `../` imports. Aliases are defined once in `tsconfig.app.json` (`paths`); Vite and Vitest read them via `resolve.tsconfigPaths`.
 - `src/` never imports from `server/`, and `server/` never imports from `src/`. Both may import from `shared/`.
-- Backend: `index.mjs` imports the feature folders (`suggest/`, `understand/`, `recipe/`); they never import `index.mjs` or each other, only `data/`. Table names and the model id come from `process.env`, set in `infra/`. Change AWS resources only in `infra/`, never in the console (drift).
+- Backend (TypeScript, bundled by esbuild through CDK; `tsconfig.node.json` has its `@shared/` alias): `index.ts` imports the feature folders (`suggest/`, `understand/`, `recipe/`); they never import `index.ts` or each other, only `data/`. Table names and the model id come from `process.env`, set in `infra/`. Change AWS resources only in `infra/`, never in the console (drift).
 
 ## Testing
 
