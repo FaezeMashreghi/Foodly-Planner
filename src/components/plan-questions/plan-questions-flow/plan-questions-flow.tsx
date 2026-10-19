@@ -1,9 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { EMPTY_PLAN_ANSWERS, type PlanAnswers } from '@shared/week-plan/week-plan'
+import {
+  EMPTY_PLAN_ANSWER_LABELS,
+  EMPTY_PLAN_ANSWERS,
+  type PlanAnswers,
+} from '@shared/week-plan/week-plan'
 import { ApiError } from '@/api/foodly/api-error'
-import { mealsQueryOptions } from '@/api/foodly/meals'
 import { extractPlanAnswers, savePlanAnswers } from '@/api/foodly/plan'
 import { queryKeys } from '@/api/foodly/query-keys'
 import { ExtractErrorScreen } from '@/components/plan-questions/extract-error-screen/extract-error-screen'
@@ -26,7 +29,7 @@ type PlanQuestionsFlowProps = {
 export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { typedAnswers, extractedAnswers, updateDraft } = usePlanDraft()
+  const { typedAnswers, extractedAnswers, answerLabels, updateDraft } = usePlanDraft()
   const [today] = useState(() => new Date())
 
   function goToStep(nextStep: PlanStep) {
@@ -35,8 +38,8 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
 
   const extractAnswersMutation = useMutation({
     mutationFn: (text: string) => extractPlanAnswers(text),
-    onSuccess: (answers) => {
-      updateDraft({ extractedAnswers: answers })
+    onSuccess: ({ labels, ...answers }) => {
+      updateDraft({ extractedAnswers: answers, answerLabels: labels })
       goToStep('review')
     },
   })
@@ -51,11 +54,6 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
     },
   })
 
-  // Only to show the matched dish by its real name; the weekly plan loads the same query.
-  const mustHaveMealId = extractedAnswers?.mustHaveMealId ?? null
-  const mealsQuery = useQuery({ ...mealsQueryOptions, enabled: mustHaveMealId !== null })
-  const mustHaveMealName = mealsQuery.data?.find((meal) => meal.id === mustHaveMealId)?.name
-
   function handleQuestionChange(questionIndex: number, answers: PlanAnswersText) {
     updateDraft({ typedAnswers: answers })
     goToStep(questionIndex + 1)
@@ -65,7 +63,11 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
     const answersAsText = answersToText(answers)
     // Nothing typed at all: nothing for the AI to read, so no call (and no cost).
     if (!answersAsText) {
-      updateDraft({ typedAnswers: answers, extractedAnswers: EMPTY_PLAN_ANSWERS })
+      updateDraft({
+        typedAnswers: answers,
+        extractedAnswers: EMPTY_PLAN_ANSWERS,
+        answerLabels: EMPTY_PLAN_ANSWER_LABELS,
+      })
       goToStep('review')
       return
     }
@@ -109,7 +111,7 @@ export function PlanQuestionsFlow({ step }: PlanQuestionsFlowProps) {
     return (
       <PlanReview
         answers={extractedAnswers}
-        mustHaveMealName={mustHaveMealName}
+        labels={answerLabels}
         onEdit={() => goToStep(1)}
         onConfirm={() => goToStep('start-day')}
       />

@@ -1,4 +1,8 @@
-import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import {
+  EMPTY_PLAN_ANSWER_LABELS,
+  type PlanAnswerLabels,
+  type PlanAnswers,
+} from '@shared/week-plan/week-plan'
 import type { PlanAnswersText } from '@/components/plan-questions/plan-wizard/questions'
 
 /** The unfinished flow, kept for this tab so Back and a refresh don't lose the answers. */
@@ -6,10 +10,16 @@ export type PlanDraft = {
   typedAnswers: PlanAnswersText
   /** What the AI understood; null until it has read the answers. */
   extractedAnswers: PlanAnswers | null
+  /** Names for the ids in extractedAnswers. Kept apart, so only the answers are saved. */
+  answerLabels: PlanAnswerLabels
 }
 
 const KEY = 'foodly:plan-questions-draft'
-const EMPTY_DRAFT: PlanDraft = { typedAnswers: {}, extractedAnswers: null }
+const EMPTY_DRAFT: PlanDraft = {
+  typedAnswers: {},
+  extractedAnswers: null,
+  answerLabels: EMPTY_PLAN_ANSWER_LABELS,
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -25,6 +35,9 @@ export function loadPlanDraft(storage: Storage | undefined = globalThis.sessionS
       extractedAnswers: isObject(draft.extractedAnswers)
         ? (draft.extractedAnswers as PlanAnswers)
         : null,
+      answerLabels: isObject(draft.answerLabels)
+        ? (draft.answerLabels as PlanAnswerLabels)
+        : EMPTY_PLAN_ANSWER_LABELS,
     }
   } catch {
     return EMPTY_DRAFT

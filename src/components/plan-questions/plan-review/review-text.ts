@@ -1,11 +1,13 @@
-import { getIngredient } from '@shared/meal/ingredients'
-import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import type { PlanAnswerLabels, PlanAnswers } from '@shared/week-plan/week-plan'
 import type { Chip } from '@/components/ui/chip-list/chip-list'
 
 /** One chip per ingredient id, with its name and emoji; an unknown id is shown as it is. */
-export function toIngredientChips(ids: readonly string[]): Chip[] {
+export function toIngredientChips(
+  ids: readonly string[],
+  labels: PlanAnswerLabels['ingredients'],
+): Chip[] {
   return ids.map((id) => {
-    const ingredient = getIngredient(id)
+    const ingredient = labels[id]
     return { id, label: ingredient?.name ?? id, emoji: ingredient?.emoji }
   })
 }

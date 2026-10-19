@@ -1,6 +1,6 @@
 import { GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { db } from './data/db.mjs'
-import { loadCatalog, withNames } from './data/catalog.mjs'
+import { labelsFor, loadCatalog, withNames } from './data/catalog.mjs'
 import { loadMeals } from './data/meals.mjs'
 import { claimDailyCall } from './data/usage.mjs'
 import { checkAnswers, understand } from './understand/understand.mjs'
@@ -173,7 +173,12 @@ async function understandText(userId, body) {
     return json(429, { code: 'daily-limit', message: 'Daily limit reached' })
   }
 
-  return json(200, await understand(text))
+  const [answers, catalog, meals] = await Promise.all([
+    understand(text),
+    loadCatalog(),
+    loadMeals(),
+  ])
+  return json(200, { ...answers, labels: labelsFor(answers, catalog, meals) })
 }
 
 const SLOT_ID =
