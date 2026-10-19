@@ -9,6 +9,7 @@ function makeMeal(id: string, name: string): Meal {
     emoji: '🍽️',
     mealTypes: ['Dinner'],
     cuisine: 'persian',
+    cuisineName: 'Persian',
     difficulty: 'easy',
     prepMinutes: 30,
     servings: 2,

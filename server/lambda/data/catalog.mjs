@@ -9,7 +9,7 @@ export const CATALOG_TYPE = Object.freeze({ ingredient: 'ingredient', cuisine: '
 
 let catalog
 
-/** All ingredients and cuisines. Read once per Lambda instance, then reused by every call. */
+/** All ingredients and cuisines, as lists and as Maps by id. Read once per Lambda instance, then reused by every call. */
 export function loadCatalog() {
   catalog ??= queryCatalog().catch(forgetFailedLoad)
   return catalog
@@ -25,7 +25,27 @@ async function queryCatalog() {
     queryType(CATALOG_TYPE.ingredient),
     queryType(CATALOG_TYPE.cuisine),
   ])
-  return { ingredients, cuisines }
+  return {
+    ingredients,
+    cuisines,
+    ingredientById: new Map(ingredients.map((item) => [item.id, item])),
+    cuisineById: new Map(cuisines.map((item) => [item.id, item])),
+  }
+}
+
+/**
+ * The meal as GET /meals sends it: with its cuisine's name and each ingredient's name and emoji,
+ * so the browser doesn't need the catalogue. An id that isn't in the catalogue is shown as it is.
+ */
+export function withNames(meal, { ingredientById, cuisineById }) {
+  return {
+    ...meal,
+    cuisineName: cuisineById.get(meal.cuisine)?.name ?? meal.cuisine,
+    ingredients: meal.ingredients.map((item) => {
+      const ingredient = ingredientById.get(item.ingredientId)
+      return { ...item, name: ingredient?.name ?? item.ingredientId, emoji: ingredient?.emoji }
+    }),
+  }
 }
 
 async function queryType(type) {

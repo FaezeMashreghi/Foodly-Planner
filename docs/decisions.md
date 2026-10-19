@@ -36,6 +36,8 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 | 27  | [Frontend hosting: Amplify Hosting, built only after CI](#27-frontend-hosting-amplify-hosting-built-only-after-ci)                                                | Current           |
 | 28  | [Plan history: one query per user, native disclosure, list loads after the page](#28-plan-history-one-query-per-user-native-disclosure-list-loads-after-the-page) | Current           |
 | 29  | [Weekly plan on phones: tap to place, drag and drop only on large screens](#29-weekly-plan-on-phones-tap-to-place-drag-and-drop-only-on-large-screens)            | Current           |
+| 30  | [The meals table is the only copy of the meals; backups with PITR](#30-the-meals-table-is-the-only-copy-of-the-meals-backups-with-pitr)                           | Current           |
+| 31  | [Ingredients and cuisines in one DynamoDB catalogue table](#31-ingredients-and-cuisines-in-one-dynamodb-catalogue-table)                                          | Current           |
 
 ## 1. Backend on AWS with a single database
 
@@ -370,6 +372,7 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 
 **Chosen:** `foodly-catalog`, with partition key `type` (`"ingredient"`, `"cuisine"`) and sort key `id`. The Lambda loads each kind with one `Query` and caches it, like the meals. It is shared by all users; what a user likes or avoids stays in their own answers and preferences. The Lambda may only `Query` it for now. `GET /catalog` returns `{ ingredients, cuisines }` without the `type` key, which is how the table groups items, not part of the API.
 
+- **Names are added by the backend:** `GET /meals` adds `cuisineName` and each ingredient's `name` and `emoji` from the cached catalogue (an unknown id is shown as it is), so the browser gets only the names it shows, not the whole catalogue (it could grow to thousands of ingredients). The names are added when the meals are sent, not saved on them, so renaming an ingredient changes one item.
 - **Filled once:** the 129 ingredients and 5 cuisines were copied from `shared/meal/ingredients.ts` and `cuisines.ts` (2026-10-19) by a one-off local script, not kept: one `PutCommand` per item with `attribute_not_exists(id)`, so a second run added nothing. From then on the table is the only source; the two files are deleted once the app reads the table.
 
 **Why:** users will add their own recipes and the AI will add new ingredients and cuisines, so they become data that changes at runtime, not code. One table with a `type` key leaves room for new kinds without new tables, such as alias items (`type="alias"`, `id="tomatoes"` → `tomato`, also in Persian, Turkish and Dutch) so the AI can find an existing ingredient with one `GetItem` instead of adding a duplicate.

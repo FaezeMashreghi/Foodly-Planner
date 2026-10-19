@@ -6,6 +6,7 @@ export const porridge: Meal = {
   emoji: '🥣',
   mealTypes: ['Breakfast'],
   cuisine: 'international',
+  cuisineName: 'International (fast & healthy)',
   difficulty: 'easy',
   prepMinutes: 10,
   servings: 1,

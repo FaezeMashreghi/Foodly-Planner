@@ -15,12 +15,13 @@ const meal: Meal = {
   emoji: '🌿',
   mealTypes: ['Lunch', 'Dinner'],
   cuisine: 'persian',
+  cuisineName: 'Persian',
   difficulty: 'medium',
   prepMinutes: 180,
   servings: 2,
   ingredients: [
-    { ingredientId: 'beef-stew-meat', amount: 300, unit: 'g' },
-    { ingredientId: 'dried-lime', amount: 3, unit: 'piece' },
+    { ingredientId: 'beef-stew-meat', amount: 300, unit: 'g', name: 'Beef stew meat' },
+    { ingredientId: 'dried-lime', amount: 3, unit: 'piece', name: 'Dried lime' },
   ],
   source: 'seed',
 }

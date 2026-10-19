@@ -1,6 +1,6 @@
 import { GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { db } from './data/db.mjs'
-import { loadCatalog } from './data/catalog.mjs'
+import { loadCatalog, withNames } from './data/catalog.mjs'
 import { loadMeals } from './data/meals.mjs'
 import { claimDailyCall } from './data/usage.mjs'
 import { checkAnswers, understand } from './understand/understand.mjs'
@@ -51,7 +51,11 @@ function route(event) {
 }
 
 async function getMeals() {
-  return json(200, await loadMeals())
+  const [meals, catalog] = await Promise.all([loadMeals(), loadCatalog()])
+  return json(
+    200,
+    meals.map((meal) => withNames(meal, catalog)),
+  )
 }
 
 async function getCatalog() {

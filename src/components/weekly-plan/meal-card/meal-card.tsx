@@ -1,5 +1,4 @@
 import type { ReactNode, Ref } from 'react'
-import { getCuisineName } from '@shared/meal/cuisines'
 import type { Meal } from '@shared/meal/meal'
 import { ChipList } from '@/components/ui/chip-list/chip-list'
 
@@ -18,7 +17,7 @@ export function MealCard({
   contentRef,
   contentClassName = '',
 }: MealCardProps) {
-  const description = `${getCuisineName(meal.cuisine)} · ${meal.prepMinutes} min · ${meal.difficulty}`
+  const description = `${meal.cuisineName} · ${meal.prepMinutes} min · ${meal.difficulty}`
   const mealTypeList =
     showMealTypes && meal.mealTypes.length > 0 ? (
       <ChipList
