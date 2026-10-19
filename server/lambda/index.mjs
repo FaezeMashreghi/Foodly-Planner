@@ -51,11 +51,16 @@ function route(event) {
 }
 
 async function getMeals() {
-  const [meals, catalog] = await Promise.all([loadMeals(), loadCatalog()])
+  const [meals, catalog] = await Promise.all([loadMeals(), loadCatalog().catch(noCatalog)])
   return json(
     200,
     meals.map((meal) => withNames(meal, catalog)),
   )
+}
+
+function noCatalog(error) {
+  console.error('catalog failed, sending meals without names', error)
+  return { ingredientById: new Map(), cuisineById: new Map() }
 }
 
 async function getCatalog() {
