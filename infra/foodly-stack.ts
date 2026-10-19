@@ -26,6 +26,7 @@ export class FoodlyStack extends Stack {
       sortKey: { name: 'weekStart', type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.RETAIN,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     })
 
     const mealsTable = new Table(this, 'MealsTable', {
@@ -33,6 +34,7 @@ export class FoodlyStack extends Stack {
       partitionKey: { name: 'id', type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.RETAIN,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     })
 
     // AI calls per user per day. Only short-lived counts, so it can go with the stack.
