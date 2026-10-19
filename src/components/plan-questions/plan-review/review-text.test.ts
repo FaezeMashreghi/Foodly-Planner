@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { describeCookingTime, toIngredientChips } from './review-text'
 
+const labels = { aubergine: { name: 'Aubergine', emoji: '🍆' }, courgette: { name: 'Courgette' } }
+
 describe('toIngredientChips', () => {
   it('gives each ingredient its name and emoji', () => {
-    expect(toIngredientChips(['aubergine', 'courgette'])).toEqual([
+    expect(toIngredientChips(['aubergine', 'courgette'], labels)).toEqual([
       { id: 'aubergine', label: 'Aubergine', emoji: '🍆' },
       { id: 'courgette', label: 'Courgette', emoji: undefined },
     ])
   })
 
   it('shows an unknown id as it is', () => {
-    expect(toIngredientChips(['dragon-fruit'])).toEqual([
+    expect(toIngredientChips(['dragon-fruit'], labels)).toEqual([
       { id: 'dragon-fruit', label: 'dragon-fruit', emoji: undefined },
     ])
   })

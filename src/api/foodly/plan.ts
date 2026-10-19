@@ -1,5 +1,10 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { Plan, PlanAnswers, PlanSuggestions } from '@shared/week-plan/week-plan'
+import type {
+  Plan,
+  PlanAnswerLabels,
+  PlanAnswers,
+  PlanSuggestions,
+} from '@shared/week-plan/week-plan'
 import { apiFetch } from './client'
 import { queryKeys } from './query-keys'
 
@@ -23,7 +28,7 @@ export function savePlanSlots(plan: Plan) {
 
 /** Asks the AI to turn the user's own words into structured answers. */
 export function extractPlanAnswers(text: string) {
-  return apiFetch<PlanAnswers>('/plan/understand', {
+  return apiFetch<PlanAnswers & { labels: PlanAnswerLabels }>('/plan/understand', {
     method: 'POST',
     body: JSON.stringify({ text }),
   })

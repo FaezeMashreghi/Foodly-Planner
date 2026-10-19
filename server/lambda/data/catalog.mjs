@@ -66,3 +66,30 @@ async function queryType(type) {
   } while (startKey)
   return items
 }
+
+/**
+ * Names for the ids in the AI's answers, so the review screen can show them without the catalogue.
+ * Only for showing: the answers keep their ids, which are what is saved and scored.
+ * An id that isn't in the catalogue gets no name (the screen shows the id).
+ */
+export function labelsFor(answers, { ingredientById, cuisineById }, meals) {
+  const ingredientIds = [...answers.expiring, ...answers.wantMore, ...answers.avoid]
+  const mustHave = meals.find((meal) => meal.id === answers.mustHaveMealId)
+
+  function ingredientLabel(id) {
+    const { name, emoji } = ingredientById.get(id)
+    return [id, { name, emoji }]
+  }
+
+  return {
+    ingredients: Object.fromEntries(
+      ingredientIds.filter((id) => ingredientById.has(id)).map(ingredientLabel),
+    ),
+    cuisines: Object.fromEntries(
+      answers.cuisines
+        .filter((id) => cuisineById.has(id))
+        .map((id) => [id, cuisineById.get(id).name]),
+    ),
+    meals: mustHave ? { [mustHave.id]: mustHave.name } : {},
+  }
+}

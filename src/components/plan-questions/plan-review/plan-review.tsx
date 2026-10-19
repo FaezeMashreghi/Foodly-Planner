@@ -1,6 +1,5 @@
 import { useId } from 'react'
-import { getCuisineName } from '@shared/meal/cuisines'
-import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import type { PlanAnswerLabels, PlanAnswers } from '@shared/week-plan/week-plan'
 import { ChipList } from '@/components/ui/chip-list/chip-list'
 import { ReviewTile } from '@/components/plan-questions/review-tile/review-tile'
 import { useFocusOnMount } from '@/hooks/use-focus-on-mount'
@@ -8,20 +7,21 @@ import { describeCookingTime, toIngredientChips } from './review-text'
 
 type PlanReviewProps = {
   answers: PlanAnswers
-  mustHaveMealName?: string
+  labels: PlanAnswerLabels
   onConfirm: () => void
   onEdit: () => void
 }
 
-export function PlanReview({ answers, mustHaveMealName, onConfirm, onEdit }: PlanReviewProps) {
+export function PlanReview({ answers, labels, onConfirm, onEdit }: PlanReviewProps) {
   const headingId = useId()
   const headingRef = useFocusOnMount<HTMLHeadingElement>()
 
   const feelLike = [
-    ...answers.cuisines.map((id) => ({ id, label: getCuisineName(id) })),
-    ...toIngredientChips(answers.wantMore),
+    ...answers.cuisines.map((id) => ({ id, label: labels.cuisines[id] ?? id })),
+    ...toIngredientChips(answers.wantMore, labels.ingredients),
   ]
   const time = describeCookingTime(answers)
+  const mustHaveMealName = answers.mustHaveMealId ? labels.meals[answers.mustHaveMealId] : undefined
   const dish = mustHaveMealName ?? answers.mustHaveText
   const showWrote =
     mustHaveMealName &&
@@ -39,7 +39,9 @@ export function PlanReview({ answers, mustHaveMealName, onConfirm, onEdit }: Pla
 
       <dl className="grid gap-3 sm:grid-cols-2">
         <ReviewTile icon="🧺" label="Going off soon">
-          {answers.expiring.length > 0 && <ChipList chips={toIngredientChips(answers.expiring)} />}
+          {answers.expiring.length > 0 && (
+            <ChipList chips={toIngredientChips(answers.expiring, labels.ingredients)} />
+          )}
         </ReviewTile>
 
         <ReviewTile icon="🍽️" label="You feel like">
@@ -66,7 +68,7 @@ export function PlanReview({ answers, mustHaveMealName, onConfirm, onEdit }: Pla
 
         {answers.avoid.length > 0 && (
           <ReviewTile icon="🚫" label="Leave out">
-            <ChipList chips={toIngredientChips(answers.avoid)} />
+            <ChipList chips={toIngredientChips(answers.avoid, labels.ingredients)} />
           </ReviewTile>
         )}
 

@@ -58,6 +58,22 @@ export const EMPTY_PLAN_ANSWERS: PlanAnswers = {
   notes: [],
 }
 
+/**
+ * Names for the ids in PlanAnswers, sent with them by POST /plan/understand (decision 31).
+ * Only for showing them: the answers keep their ids, which are what is saved and scored.
+ */
+export type PlanAnswerLabels = {
+  ingredients: Partial<Record<string, { name: string; emoji?: string }>>
+  cuisines: Partial<Record<string, string>>
+  meals: Partial<Record<string, string>>
+}
+
+export const EMPTY_PLAN_ANSWER_LABELS: PlanAnswerLabels = {
+  ingredients: {},
+  cuisines: {},
+  meals: {},
+}
+
 export function toSlotId(day: Day, meal: MealType): SlotId {
   return `${day} ${meal}`
 }
