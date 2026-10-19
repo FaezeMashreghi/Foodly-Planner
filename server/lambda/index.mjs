@@ -1,5 +1,6 @@
 import { GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { db } from './data/db.mjs'
+import { loadCatalog } from './data/catalog.mjs'
 import { loadMeals } from './data/meals.mjs'
 import { claimDailyCall } from './data/usage.mjs'
 import { checkAnswers, understand } from './understand/understand.mjs'
@@ -28,6 +29,8 @@ function route(event) {
   switch (event.routeKey) {
     case 'GET /meals':
       return getMeals()
+    case 'GET /catalog':
+      return getCatalog()
     case 'POST /meals/{id}/recipe':
       return recipeFor(event.pathParameters?.id)
     case 'GET /plan':
@@ -49,6 +52,19 @@ function route(event) {
 
 async function getMeals() {
   return json(200, await loadMeals())
+}
+
+async function getCatalog() {
+  const { ingredients, cuisines } = await loadCatalog()
+  return json(200, {
+    ingredients: ingredients.map(withoutType),
+    cuisines: cuisines.map(withoutType),
+  })
+}
+
+// `type` is how the table groups items, not part of the API.
+function withoutType({ type, ...item }) {
+  return item
 }
 
 async function recipeFor(mealId) {

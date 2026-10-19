@@ -109,6 +109,7 @@ export class FoodlyStack extends Stack {
     const integration = new HttpLambdaIntegration('BackendIntegration', backend)
     const routes: [HttpMethod, string][] = [
       [HttpMethod.GET, '/meals'],
+      [HttpMethod.GET, '/catalog'],
       [HttpMethod.POST, '/meals/{id}/recipe'],
       [HttpMethod.GET, '/plan'],
       [HttpMethod.PUT, '/plan'],
