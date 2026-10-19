@@ -52,7 +52,8 @@ server/lambda/            ← the one Lambda for all routes (decision 18), bundl
 ├── suggest/              ← suggestion scoring (plain code, unit-tested)
 ├── understand/           ← AI: turns the user's text into answers (Bedrock)
 └── recipe/               ← AI: writes a meal's recipe once and saves it
-shared/                   ← types and validation used by both src/ and server/
+shared/                   ← types and validation meant for both src/ and server/ (the Lambda is
+                            plain .mjs and imports none of it yet, so today only src/ uses it)
 └── validation/           ← pure rules, one folder each (email/email.ts, password/password.ts);
                             each returns an error message or undefined
 ```

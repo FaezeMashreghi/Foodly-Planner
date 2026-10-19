@@ -1,23 +1,22 @@
-import type { CuisineId } from '@shared/meal/cuisines'
-import type { IngredientId, Unit } from '@shared/meal/ingredients'
-
 export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'] as const
 
 export type MealType = (typeof MEAL_TYPES)[number]
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
 
+export type Unit = 'g' | 'ml' | 'piece'
+
 export type Ingredient = {
-  ingredientId: IngredientId
+  ingredientId: string
   amount: number
   unit: Unit
+  /** Added by GET /meals, not stored on the meal. */
   name: string
   emoji?: string
 }
 
-/** Written by AI once per meal and saved on it (decision 19). */
 export type Recipe = {
-  /** Spices, herbs and pantry items the steps use that aren't in the meal's ingredients. */
+  /** Pantry items the steps use that aren't in the ingredients. */
   extras: string[]
   steps: string[]
   tips: string[]
@@ -26,21 +25,15 @@ export type Recipe = {
 }
 
 export type Meal = {
-  /** Readable and stable, e.g. "spaghetti-bolognese". Stored as `_id` in MongoDB. */
   id: string
   name: string
-  /** Shown instead of a photo for now. */
   emoji: string
   mealTypes: MealType[]
-  cuisine: CuisineId
-  /** Added by GET /meals from the catalogue (decision 31); the id if it isn't there. */
+  cuisine: string
+  /** Added by GET /meals, not stored on the meal. */
   cuisineName: string
   difficulty: Difficulty
   prepMinutes: number
   servings: number
   ingredients: Ingredient[]
-  /** S3 key of the photo; meals show an emoji until photos exist. */
-  image?: string
-  /** "seed": the reviewed starting catalogue; "ai": created later on request. */
-  source: 'seed' | 'ai'
 }

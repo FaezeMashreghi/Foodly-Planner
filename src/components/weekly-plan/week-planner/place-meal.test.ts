@@ -14,7 +14,6 @@ function makeMeal(id: string, name: string): Meal {
     prepMinutes: 30,
     servings: 2,
     ingredients: [],
-    source: 'seed',
   }
 }
 
