@@ -63,3 +63,24 @@ describe('GET /plans', () => {
     expect(send.mock.calls[1][0].input.ExclusiveStartKey).toEqual(bookmark)
   })
 })
+
+describe('GET /catalog', () => {
+  it('returns every ingredient and cuisine, without the table key', async () => {
+    send.mockImplementation(({ input }) =>
+      Promise.resolve({
+        Items:
+          input.ExpressionAttributeValues[':type'] === 'ingredient'
+            ? [{ type: 'ingredient', id: 'tomato', name: 'Tomato', unit: 'g' }]
+            : [{ type: 'cuisine', id: 'persian', name: 'Persian' }],
+      }),
+    )
+
+    const response = await handler(request('GET /catalog'))
+
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.body)).toEqual({
+      ingredients: [{ id: 'tomato', name: 'Tomato', unit: 'g' }],
+      cuisines: [{ id: 'persian', name: 'Persian' }],
+    })
+  })
+})

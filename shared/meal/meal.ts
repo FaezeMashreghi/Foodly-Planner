@@ -11,6 +11,8 @@ export type Ingredient = {
   ingredientId: IngredientId
   amount: number
   unit: Unit
+  name: string
+  emoji?: string
 }
 
 /** Written by AI once per meal and saved on it (decision 19). */
@@ -31,6 +33,8 @@ export type Meal = {
   emoji: string
   mealTypes: MealType[]
   cuisine: CuisineId
+  /** Added by GET /meals from the catalogue (decision 31); the id if it isn't there. */
+  cuisineName: string
   difficulty: Difficulty
   prepMinutes: number
   servings: number

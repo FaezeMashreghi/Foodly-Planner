@@ -1,8 +1,8 @@
-import { formatIngredient, getIngredient } from '@shared/meal/ingredients'
 import type { Meal } from '@shared/meal/meal'
 import { MealCard } from '@/components/weekly-plan/meal-card/meal-card'
 import { MealRecipe } from '@/components/weekly-plan/meal-recipe/meal-recipe'
 import { getYoutubeSearchUrl } from '@/lib/youtube'
+import { formatIngredient } from './format-ingredient'
 
 export function MealDetails({ meal }: { meal: Meal }) {
   return (
@@ -17,7 +17,7 @@ export function MealDetails({ meal }: { meal: Meal }) {
           {meal.ingredients.map((item) => (
             <li key={item.ingredientId} className="flex items-center gap-2">
               <span aria-hidden="true" className="w-6 shrink-0 text-center text-ink-muted">
-                {getIngredient(item.ingredientId)?.emoji ?? '•'}
+                {item.emoji ?? '•'}
               </span>
               {formatIngredient(item)}
             </li>

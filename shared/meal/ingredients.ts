@@ -1,5 +1,3 @@
-import type { Ingredient } from './meal'
-
 export type Unit = 'g' | 'ml' | 'piece'
 
 export const INGREDIENT_CATEGORIES = [
@@ -208,10 +206,4 @@ const ingredientById = new Map<string, IngredientInfo>(INGREDIENTS.map((item) =>
 /** The ingredient with this id, or undefined for an id we don't know. */
 export function getIngredient(id: string): IngredientInfo | undefined {
   return ingredientById.get(id)
-}
-
-/** "300 g Beef stew meat", or "3 × Dried lime" for pieces. Falls back to the id for an unknown ingredient. */
-export function formatIngredient({ ingredientId, amount, unit }: Ingredient): string {
-  const name = getIngredient(ingredientId)?.name ?? ingredientId
-  return unit === 'piece' ? `${amount} × ${name}` : `${amount} ${unit} ${name}`
 }
