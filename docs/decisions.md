@@ -365,3 +365,13 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Instead of:** a committed seed script (it still couldn't restore recipes or users' data), no backup (one bad script could delete every plan).
 
 **Trade-off:** a new environment can't be filled from the repo; PITR costs a few cents a month. `foodly-usage` has no PITR (short-lived counters only).
+
+## 31. Ingredients and cuisines in one DynamoDB catalogue table
+
+**Chosen:** `foodly-catalog`, with partition key `type` (`"ingredient"`, `"cuisine"`) and sort key `id`. The Lambda loads each kind with one `Query` and caches it, like the meals. It is shared by all users; what a user likes or avoids stays in their own answers and preferences. The Lambda may only `Query` it for now.
+
+**Why:** users will add their own recipes and the AI will add new ingredients and cuisines, so they become data that changes at runtime, not code. One table with a `type` key leaves room for new kinds without new tables, such as alias items (`type="alias"`, `id="tomatoes"` → `tomato`, also in Persian, Turkish and Dutch) so the AI can find an existing ingredient with one `GetItem` instead of adding a duplicate.
+
+**Instead of:** a table per kind (the same cost to read, but a table for 5 cuisines and a third one for aliases), keeping them in `shared/` (needs a deploy for every new ingredient), a copy per user (the same facts stored many times, and fixes don't reach everyone).
+
+**Trade-off:** ingredient and cuisine ids become plain strings, so typos are caught by runtime checks, not by TypeScript. The full list stays in the AI prompt while it is small (~1,000 tokens at 150 ingredients); past roughly 1,000 ingredients the AI needs a search tool instead.

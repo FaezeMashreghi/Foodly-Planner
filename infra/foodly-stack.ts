@@ -37,6 +37,15 @@ export class FoodlyStack extends Stack {
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     })
 
+    const catalogTable = new Table(this, 'CatalogTable', {
+      tableName: 'foodly-catalog',
+      partitionKey: { name: 'type', type: AttributeType.STRING },
+      sortKey: { name: 'id', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.RETAIN,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+    })
+
     // AI calls per user per day. Only short-lived counts, so it can go with the stack.
     const usageTable = new Table(this, 'UsageTable', {
       partitionKey: { name: 'userId', type: AttributeType.STRING },
@@ -57,6 +66,7 @@ export class FoodlyStack extends Stack {
         PLANS_TABLE: plansTable.tableName,
         MEALS_TABLE: mealsTable.tableName,
         USAGE_TABLE: usageTable.tableName,
+        CATALOG_TABLE: catalogTable.tableName,
         MODEL_ID: `eu.${HAIKU_MODEL}`,
       },
       bundling: { format: OutputFormat.ESM, target: 'node22' },
@@ -69,6 +79,7 @@ export class FoodlyStack extends Stack {
     plansTable.grant(backend, 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:UpdateItem')
     mealsTable.grant(backend, 'dynamodb:Scan', 'dynamodb:GetItem', 'dynamodb:UpdateItem')
     usageTable.grant(backend, 'dynamodb:UpdateItem')
+    catalogTable.grant(backend, 'dynamodb:Query')
     // The "eu." inference profile sends each call to one of the EU regions.
     backend.addToRolePolicy(
       new PolicyStatement({
