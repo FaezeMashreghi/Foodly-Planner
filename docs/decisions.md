@@ -355,3 +355,13 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Instead of:** dragging on touch (cards had to block scrolling with `touch-none`, the drop slots were off screen above the list, and only the open day could take a drop), user-agent detection (unreliable, and the question is space, not device), loading dnd-kit everywhere (most of the page's JavaScript, unused on phones).
 
 **Trade-off:** two week layouts to keep in step, sharing `DaySection` and `MealSlot`. Resizing a window across `lg` swaps the layout (the plan lives in the Query cache, so nothing is lost). No special handling for the rare cases, on purpose: after widening a window past `lg`, the route's skeleton shows while the chunk downloads, and if the download fails the route's error page shows. Its Try again re-runs the loader, which starts the import again. That can fix a short server error, but not a file that is gone (a deploy removed it). Older browsers also remember a failed import and won't fetch it again (the spec required this until 2026, [whatwg/html#6768](https://github.com/whatwg/html/issues/6768)). Reloading the page fixes both. Accepted as rare.
+
+## 30. The meals table is the only copy of the meals; backups with PITR
+
+**Chosen:** `shared/meal/seed-meals.ts` and its test are deleted: the 100 meals live only in `foodly-meals`, which also holds the saved recipes. Point-in-time recovery is on for `foodly-meals` and `foodly-plans` (restore to any second in the last 35 days).
+
+**Why:** the app never read the seed file, and a second copy in code would drift from the table (it has no recipes). Ingredients and cuisines move to DynamoDB next, so users and the AI can add them later.
+
+**Instead of:** a committed seed script (it still couldn't restore recipes or users' data), no backup (one bad script could delete every plan).
+
+**Trade-off:** a new environment can't be filled from the repo; PITR costs a few cents a month. `foodly-usage` has no PITR (short-lived counters only).
