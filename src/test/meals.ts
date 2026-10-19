@@ -11,7 +11,6 @@ export const porridge: Meal = {
   prepMinutes: 10,
   servings: 1,
   ingredients: [],
-  source: 'seed',
 }
 
 export const omelette: Meal = { ...porridge, id: 'omelette', name: 'Omelette', emoji: '🍳' }

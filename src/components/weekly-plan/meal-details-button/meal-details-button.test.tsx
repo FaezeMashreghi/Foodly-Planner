@@ -23,7 +23,6 @@ const meal: Meal = {
     { ingredientId: 'beef-stew-meat', amount: 300, unit: 'g', name: 'Beef stew meat' },
     { ingredientId: 'dried-lime', amount: 3, unit: 'piece', name: 'Dried lime' },
   ],
-  source: 'seed',
 }
 
 function render(ui: React.ReactElement) {
