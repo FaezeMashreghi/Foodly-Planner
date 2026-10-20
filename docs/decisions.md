@@ -36,9 +36,10 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 | 27  | [Frontend hosting: Amplify Hosting, built only after CI](#27-frontend-hosting-amplify-hosting-built-only-after-ci)                                                | Current           |
 | 28  | [Plan history: one query per user, native disclosure, list loads after the page](#28-plan-history-one-query-per-user-native-disclosure-list-loads-after-the-page) | Current           |
 | 29  | [Weekly plan on phones: tap to place, drag and drop only on large screens](#29-weekly-plan-on-phones-tap-to-place-drag-and-drop-only-on-large-screens)            | Current           |
-| 30  | [The meals table is the only copy of the meals; backups with PITR](#30-the-meals-table-is-the-only-copy-of-the-meals-backups-with-pitr)                           | Current           |
+| 30  | [The meals table is the only copy of the meals; backups with PITR](#30-the-meals-table-is-the-only-copy-of-the-meals-backups-with-pitr)                           | Updated by 33     |
 | 31  | [Ingredients and cuisines in one DynamoDB catalogue table](#31-ingredients-and-cuisines-in-one-dynamodb-catalogue-table)                                          | Current           |
 | 32  | [The Lambda in TypeScript, sharing types with the frontend](#32-the-lambda-in-typescript-sharing-types-with-the-frontend)                                         | Current           |
+| 33  | [Meal tags: store only what can't be computed; meals without a style removed](#33-meal-tags-store-only-what-cant-be-computed-meals-without-a-style-removed)       | Current           |
 
 ## 1. Backend on AWS with a single database
 
@@ -392,3 +393,20 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Instead of:** JSDoc types in `.mjs` (types written as comments), Node's own resolution (`nodenext`: every import inside `shared/` would need a `.ts` extension), keeping JavaScript (copies drift, response shapes unchecked).
 
 **Trade-off:** what DynamoDB and Bedrock return is still cast (`as MealItem[]`) and only checked at runtime where it matters (`clean()` for the AI's answers). Test mocks keep the real `db.ts` and replace only `db`.
+
+## 33. Meal tags: store only what can't be computed; meals without a style removed
+
+**Chosen:** meals get two optional fields, `dishStyles` (from a fixed list of 8 in `shared/meal/meal.ts`: `stew`, `rice-dish`, `soup`, `salad`, `wrap-sandwich`, `pasta-noodles`, `grill`, `breakfast-style`) and `activeMinutes` (hands-on time; `prepMinutes` stays the total). `ALLERGENS` (8 values) is defined next to them for the ingredients, filled in a later step. Everything that follows from the ingredients is computed in code, not stored: vegetarian, vegan, pescatarian, main protein, a rough high-protein, and a meal's allergens.
+
+- **Tagged once, 2026-10-20:** an AI drafted the tags from a `scan` export into a file of `{ id, dishStyles, activeMinutes }` only; it was checked (every id exists, values from the list, `activeMinutes` ≤ `prepMinutes`), then written with one `UpdateCommand` per meal and `attribute_exists(id)`. Never `PutCommand` with a meal from `loadMeals()`: it has no `recipe`, so a Put would delete it.
+- **14 meals removed:** the meals that fit none of the 8 styles (kuku sabzi, kotlet, lahmacun, dolmeh felfel, kashk-e bademjan…) were deleted rather than left untagged. One had a recipe and one past plan used it; the history shows "Meal no longer available". A full backup was taken first, and PITR can restore to 2026-10-20 11:18 UTC.
+- **18 new Persian meals,** AI-written with `source: "ai"` (the others are `"seed"`), using only catalogue ingredient ids with the catalogue's unit, added with `attribute_not_exists(id)`. 13 ingredients were added to `foodly-catalog` for them (barberry, okra, lamb-shank, vine-leaf…, 142 in all), the first with an `allergens` field. Now 104 meals, all tagged.
+- **The time limit stays on total time:** `suggest.ts` still compares `maxPrepMinutes` with `prepMinutes`. With active time, "I only have an hour" would suggest a 3-hour stew with 45 active minutes. `activeMinutes` is for the agent, which can tell "no time" from "home but busy".
+- **Separate typed fields, plain lists:** not one `tags: string[]` (each kind is used differently, and TypeScript catches values outside the list), and DynamoDB lists, not String Sets (a set can't be empty and comes back as a JS `Set`, which `JSON.stringify` turns into `{}`).
+- **The lists live in code,** unlike ingredients (decision 31): scoring and the agent's instructions need code for each style anyway.
+
+**Why:** the agent (next) needs facts to search and filter on, and tags make that fast and cheap. It won't rely on them only: missing or wrong tags, and user-added meals not tagged yet, are covered by reading the meal's name and ingredients. Hard filters (allergies, diet) always run in code, never in the model. Computed facts stay correct when a recipe changes, and user-added meals get them for free.
+
+**Instead of:** tagging everything in the spec (halal, equipment, leftovers, protein grams: nothing uses them yet), an AI-written schema with ~20 fields per meal (copies of `prepMinutes` and of facts the ingredients already give), keeping the 14 meals with no style (the agent would still find them through their details).
+
+**Trade-off:** fewer meals (100 → 86 seed + 18 AI), and AI-written meals and times are estimates. Missing `activeMinutes` falls back to `prepMinutes`. Missing ingredient `allergens` will mean "not checked", not "none", so those meals are hidden from anyone with an allergy until checked.
