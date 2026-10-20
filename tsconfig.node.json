@@ -14,9 +14,10 @@
     "moduleDetection": "force",
     "noEmit": true,
 
-    /* Path alias, as in tsconfig.app.json; the Lambda bundle (infra) reads it too */
+    /* Path aliases, like tsconfig.app.json; the Lambda bundle (infra) reads them too */
     "paths": {
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@server/*": ["./server/*"]
     },
 
     /* Linting */

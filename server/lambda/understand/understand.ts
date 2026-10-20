@@ -5,7 +5,7 @@ import {
   type Tool,
 } from '@aws-sdk/client-bedrock-runtime'
 import type { PlanAnswers } from '@shared/week-plan/week-plan'
-import { loadMeals, type MealItem } from '../data/meals.ts'
+import { loadMeals, type MealItem } from '@server/lambda/data/meals.ts'
 
 const bedrock = new BedrockRuntimeClient({})
 // The fallback is for eval.ts, run on your machine; the Lambda gets it from infra.

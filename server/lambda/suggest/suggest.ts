@@ -4,7 +4,7 @@ import {
   type PlanAnswers,
   type PlanSuggestions,
 } from '@shared/week-plan/week-plan'
-import type { MealItem } from '../data/meals.ts'
+import type { MealItem } from '@server/lambda/data/meals.ts'
 
 export const SUGGESTIONS_PER_MEAL_TYPE = 10
 

@@ -8,7 +8,15 @@ import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyStructuredResultV2,
 } from 'aws-lambda'
-import { isSlotId, type Plan, type PlanAnswers, type PlanSlots } from '@shared/week-plan/week-plan'
+import {
+  EMPTY_PLAN_ANSWER_LABELS,
+  EMPTY_PLAN_ANSWERS,
+  isIsoDate,
+  isSlotId,
+  type Plan,
+  type PlanAnswers,
+  type PlanSlots,
+} from '@shared/week-plan/week-plan'
 import { labelsFor, loadCatalog, withNames } from './data/catalog.ts'
 import { db } from './data/db.ts'
 import { loadMeals } from './data/meals.ts'
@@ -37,7 +45,9 @@ export const handler = async (event: Event): Promise<Result> => {
 }
 
 function route(event: Event): Promise<Result> | Result {
-  const userId = String(event.requestContext.authorizer.jwt.claims.sub)
+  const userId = event.requestContext.authorizer.jwt.claims.sub
+  // The authorizer always sets it; if it ever doesn't, refuse rather than share one plan between users.
+  if (typeof userId !== 'string' || !userId) return json(401, { message: 'Not signed in' })
 
   switch (event.routeKey) {
     case 'GET /meals':
@@ -96,7 +106,7 @@ async function recipeFor(mealId: string | undefined) {
 }
 
 async function getPlan(userId: string, weekStart: string | undefined) {
-  if (!isWeekStart(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
+  if (!isIsoDate(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
 
   const { Item } = await db.send(
     new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart }, ConsistentRead: true }),
@@ -132,7 +142,7 @@ function hasMeals(plan: Plan) {
 }
 
 async function getSuggestions(userId: string, weekStart: string | undefined) {
-  if (!isWeekStart(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
+  if (!isIsoDate(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
 
   const [{ Item }, meals] = await Promise.all([
     db.send(
@@ -140,13 +150,15 @@ async function getSuggestions(userId: string, weekStart: string | undefined) {
     ),
     loadMeals(),
   ])
-  return json(200, suggestMeals(meals, Item?.answers as PlanAnswers | undefined))
+  // Answers saved before a field existed don't have it.
+  const answers: PlanAnswers = { ...EMPTY_PLAN_ANSWERS, ...Item?.answers }
+  return json(200, suggestMeals(meals, answers))
 }
 
 // UpdateCommand, not PutCommand: a Put would replace the whole item and delete the answers.
 async function savePlan(userId: string, body: string | undefined) {
   const plan = parseJson(body)
-  if (!isObject(plan) || !isWeekStart(plan.weekStart) || !isSlots(plan.slots)) {
+  if (!isObject(plan) || !isIsoDate(plan.weekStart) || !isSlots(plan.slots)) {
     return json(400, { message: 'Invalid plan' })
   }
 
@@ -156,7 +168,7 @@ async function savePlan(userId: string, body: string | undefined) {
 
 async function saveAnswers(userId: string, body: string | undefined) {
   const request = parseJson(body)
-  if (!isObject(request) || !isWeekStart(request.weekStart) || !isObject(request.answers)) {
+  if (!isObject(request) || !isIsoDate(request.weekStart) || !isObject(request.answers)) {
     return json(400, { message: 'Invalid answers' })
   }
 
@@ -190,17 +202,20 @@ async function understandText(userId: string, body: string | undefined) {
 
   const [answers, catalog, meals] = await Promise.all([
     understand(text),
-    loadCatalog(),
+    loadCatalog().catch(logMissingCatalog),
     loadMeals(),
   ])
-  return json(200, { ...answers, labels: labelsFor(answers, catalog, meals) })
+  const labels = catalog ? labelsFor(answers, catalog, meals) : EMPTY_PLAN_ANSWER_LABELS
+  return json(200, { ...answers, labels })
+}
+
+// The AI call is already paid for: send the answers without names rather than fail.
+function logMissingCatalog(error: unknown) {
+  console.error('catalog failed, answers sent without names', error)
+  return null
 }
 
 const MEAL_ID = /^[a-z0-9-]{1,80}$/
-
-function isWeekStart(value: unknown): value is string {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

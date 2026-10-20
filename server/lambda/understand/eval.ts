@@ -1,6 +1,6 @@
 // Runs every test case against the real model and scores the result field by field.
 //   AWS_PROFILE=foodly AWS_REGION=eu-west-2 npm run eval
-//   MODEL_ID=<another model id> ... npm run eval     compare models
+//   MODEL_ID='your-model-id' ... npm run eval        compare models (put a Bedrock model id in the quotes)
 //   ... npm run eval -- lentil                       only cases whose name contains "lentil"
 import { readFile } from 'node:fs/promises'
 import type { PlanAnswers } from '@shared/week-plan/week-plan'

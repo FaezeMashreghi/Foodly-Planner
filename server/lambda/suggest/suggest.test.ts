@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_PLAN_ANSWERS } from '@shared/week-plan/week-plan'
-import type { MealItem } from '../data/meals.ts'
+import type { MealItem } from '@server/lambda/data/meals.ts'
 import { scoreMeal, suggestMeals, SUGGESTIONS_PER_MEAL_TYPE } from './suggest.ts'
 
 function meal(id: string, overrides: Partial<MealItem> = {}): MealItem {

@@ -1,8 +1,8 @@
 import { BedrockRuntimeClient, ConverseCommand, type Tool } from '@aws-sdk/client-bedrock-runtime'
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import type { Recipe } from '@shared/meal/meal'
-import { db, isConditionFailed } from '../data/db.ts'
-import { MEALS_TABLE as TABLE, type MealItem } from '../data/meals.ts'
+import { db, isConditionFailed } from '@server/lambda/data/db.ts'
+import { MEALS_TABLE as TABLE, type MealItem } from '@server/lambda/data/meals.ts'
 
 type MealWithRecipe = MealItem & { recipe?: Recipe }
 
@@ -73,6 +73,7 @@ export async function getRecipe(mealId: string): Promise<Recipe | null> {
 }
 
 async function writeRecipe(meal: MealItem): Promise<Recipe> {
+  if (!MODEL_ID) throw new Error('MODEL_ID is not set')
   const ingredients = meal.ingredients
     .map((item) => `- ${item.amount} ${item.unit} ${item.ingredientId}`)
     .join('\n')
@@ -106,7 +107,7 @@ async function writeRecipe(meal: MealItem): Promise<Recipe> {
     extras: texts(input.extras, 15),
     steps,
     tips: texts(input.tips, 3),
-    model: MODEL_ID ?? '',
+    model: MODEL_ID,
     createdAt: new Date().toISOString(),
   }
 }

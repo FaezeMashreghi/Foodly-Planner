@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { GetCommand } from '@aws-sdk/lib-dynamodb'
 import type { APIGatewayProxyEventV2WithJWTAuthorizer } from 'aws-lambda'
 import type { Plan } from '@shared/week-plan/week-plan'
 import { handler } from './index.ts'
@@ -93,5 +94,37 @@ describe('GET /catalog', () => {
       ingredients: [{ id: 'tomato', name: 'Tomato', unit: 'g' }],
       cuisines: [{ id: 'persian', name: 'Persian' }],
     })
+  })
+})
+
+describe('the signed-in user', () => {
+  it('is refused when the token has no user id, instead of sharing one plan', async () => {
+    const event = request('GET /plans')
+    delete (event.requestContext.authorizer.jwt.claims as Record<string, unknown>).sub
+
+    const response = await handler(event)
+
+    expect(response.statusCode).toBe(401)
+    expect(send).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /plan/suggestions', () => {
+  it('works for answers saved before a field existed', async () => {
+    send.mockImplementation((command) =>
+      Promise.resolve(
+        command instanceof GetCommand
+          ? { Item: { answers: { expiring: ['spinach'] } } }
+          : { Items: [{ id: 'porridge', mealTypes: ['Breakfast'], ingredients: [] }] },
+      ),
+    )
+
+    const response = await handler({
+      ...request('GET /plan/suggestions'),
+      queryStringParameters: { week: '2026-10-19' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.body ?? '').Breakfast).toEqual(['porridge'])
   })
 })

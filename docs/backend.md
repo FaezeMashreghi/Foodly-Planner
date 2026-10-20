@@ -69,7 +69,8 @@ The app has two stacks, so always name the stack: `npx cdk deploy` alone fails, 
 
 ```sh
 AWS_PROFILE=foodly AWS_REGION=eu-west-2 npm run eval
-MODEL_ID=<another model id> AWS_PROFILE=foodly AWS_REGION=eu-west-2 npm run eval
+# Compare models: replace the quoted value with a Bedrock model id first
+MODEL_ID='your-model-id' AWS_PROFILE=foodly AWS_REGION=eu-west-2 npm run eval
 AWS_PROFILE=foodly AWS_REGION=eu-west-2 npm run eval -- lentil   # only cases whose name contains "lentil"
 ```
 
