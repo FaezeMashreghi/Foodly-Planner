@@ -1,18 +1,12 @@
-export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner']
-export const SUGGESTIONS_PER_MEAL_TYPE = 10
+import { MEAL_TYPES } from '@shared/meal/meal'
+import {
+  EMPTY_PLAN_ANSWERS,
+  type PlanAnswers,
+  type PlanSuggestions,
+} from '@shared/week-plan/week-plan'
+import type { MealItem } from '@server/lambda/data/meals.ts'
 
-/** For a plan without answers yet. */
-export const NO_ANSWERS = {
-  expiring: [],
-  wantMore: [],
-  avoid: [],
-  cuisines: [],
-  easyOnly: false,
-  maxPrepMinutes: null,
-  mustHaveMealId: null,
-  mustHaveText: null,
-  notes: [],
-}
+export const SUGGESTIONS_PER_MEAL_TYPE = 10
 
 // How much each match counts. The must-have dish doesn't need points: it always goes first.
 const POINTS = {
@@ -26,9 +20,9 @@ const POINTS = {
 }
 
 /** A meal's score for the user's answers. Higher is a better fit. */
-export function scoreMeal(meal, answers) {
+export function scoreMeal(meal: MealItem, answers: PlanAnswers) {
   const ingredients = new Set(meal.ingredients.map((item) => item.ingredientId))
-  const uses = (ids) => ids.filter((id) => ingredients.has(id)).length
+  const uses = (ids: string[]) => ids.filter((id) => ingredients.has(id)).length
 
   let score = uses(answers.expiring) * POINTS.expiring
   score += Math.min(uses(answers.wantMore), POINTS.maxWantMore) * POINTS.wantMore
@@ -45,7 +39,10 @@ export function scoreMeal(meal, answers) {
  * left out (safety beats the must-have dish); the must-have dish comes first; the rest are sorted
  * by score, then by id so the same answers always give the same list.
  */
-export function suggestMeals(meals, answers = NO_ANSWERS) {
+export function suggestMeals(
+  meals: MealItem[],
+  answers: PlanAnswers = EMPTY_PLAN_ANSWERS,
+): PlanSuggestions {
   const avoid = new Set(answers.avoid)
   const allowed = meals.filter(
     (meal) => !meal.ingredients.some((item) => avoid.has(item.ingredientId)),
@@ -68,5 +65,5 @@ export function suggestMeals(meals, answers = NO_ANSWERS) {
         .slice(0, SUGGESTIONS_PER_MEAL_TYPE)
         .map(({ meal }) => meal.id),
     ]),
-  )
+  ) as PlanSuggestions
 }

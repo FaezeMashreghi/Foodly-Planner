@@ -1,17 +1,42 @@
 import { describe, expect, it } from 'vitest'
-import { labelsFor, withNames } from './catalog.mjs'
+import { EMPTY_PLAN_ANSWERS } from '@shared/week-plan/week-plan'
+import { labelsFor, withNames, type Catalog, type IngredientItem } from './catalog.ts'
+import type { MealItem } from './meals.ts'
 
-const catalog = {
-  ingredientById: new Map([
-    ['dried-lime', { id: 'dried-lime', name: 'Dried lime' }],
-    ['beef-stew-meat', { id: 'beef-stew-meat', name: 'Beef stew meat', emoji: '🥩' }],
-  ]),
-  cuisineById: new Map([['persian', { id: 'persian', name: 'Persian' }]]),
+const ingredients: IngredientItem[] = [
+  {
+    type: 'ingredient',
+    id: 'dried-lime',
+    name: 'Dried lime',
+    category: 'herb-spice',
+    unit: 'piece',
+  },
+  {
+    type: 'ingredient',
+    id: 'beef-stew-meat',
+    name: 'Beef stew meat',
+    category: 'meat',
+    unit: 'g',
+    emoji: '🥩',
+  },
+]
+const cuisines: Catalog['cuisines'] = [{ type: 'cuisine', id: 'persian', name: 'Persian' }]
+const catalog: Catalog = {
+  ingredients,
+  cuisines,
+  ingredientById: new Map(ingredients.map((item) => [item.id, item])),
+  cuisineById: new Map(cuisines.map((item) => [item.id, item])),
 }
 
-const meal = {
+const meal: MealItem = {
   id: 'ghormeh-sabzi',
+  name: 'Ghormeh sabzi',
+  emoji: '🌿',
+  mealTypes: ['Dinner'],
   cuisine: 'persian',
+  difficulty: 'medium',
+  prepMinutes: 180,
+  servings: 2,
   ingredients: [
     { ingredientId: 'beef-stew-meat', amount: 300, unit: 'g' },
     { ingredientId: 'dried-lime', amount: 3, unit: 'piece' },
@@ -20,9 +45,7 @@ const meal = {
 
 describe('withNames', () => {
   it("adds the cuisine's name and each ingredient's name and emoji", () => {
-    expect(withNames(meal, catalog)).toEqual({
-      id: 'ghormeh-sabzi',
-      cuisine: 'persian',
+    expect(withNames(meal, catalog)).toMatchObject({
       cuisineName: 'Persian',
       ingredients: [
         {
@@ -32,19 +55,13 @@ describe('withNames', () => {
           name: 'Beef stew meat',
           emoji: '🥩',
         },
-        {
-          ingredientId: 'dried-lime',
-          amount: 3,
-          unit: 'piece',
-          name: 'Dried lime',
-          emoji: undefined,
-        },
+        { ingredientId: 'dried-lime', amount: 3, unit: 'piece', name: 'Dried lime' },
       ],
     })
   })
 
   it('shows an id that is not in the catalogue as it is', () => {
-    const unknown = {
+    const unknown: MealItem = {
       ...meal,
       cuisine: 'mexican',
       ingredients: [{ ingredientId: 'dragon-fruit', amount: 1, unit: 'piece' }],
@@ -59,18 +76,17 @@ describe('withNames', () => {
 
 describe('labelsFor', () => {
   const answers = {
+    ...EMPTY_PLAN_ANSWERS,
     expiring: ['dried-lime'],
-    wantMore: [],
     avoid: ['beef-stew-meat', 'dragon-fruit'],
     cuisines: ['persian'],
     mustHaveMealId: 'ghormeh-sabzi',
   }
-  const meals = [{ id: 'ghormeh-sabzi', name: 'Ghormeh sabzi' }]
 
   it('names every ingredient, cuisine and the must-have dish in the answers', () => {
-    expect(labelsFor(answers, catalog, meals)).toEqual({
+    expect(labelsFor(answers, catalog, [meal])).toEqual({
       ingredients: {
-        'dried-lime': { name: 'Dried lime', emoji: undefined },
+        'dried-lime': { name: 'Dried lime' },
         'beef-stew-meat': { name: 'Beef stew meat', emoji: '🥩' },
       },
       cuisines: { persian: 'Persian' },
@@ -79,6 +95,6 @@ describe('labelsFor', () => {
   })
 
   it('has no dish name when there is no must-have dish', () => {
-    expect(labelsFor({ ...answers, mustHaveMealId: null }, catalog, meals).meals).toEqual({})
+    expect(labelsFor({ ...answers, mustHaveMealId: null }, catalog, [meal]).meals).toEqual({})
   })
 })

@@ -6,12 +6,19 @@
     "types": ["node"],
     "skipLibCheck": true,
 
-    /* Bundler mode */
-    "module": "nodenext",
+    /* Bundler mode: nothing here runs in plain Node (esbuild bundles the Lambda, tsx runs CDK) */
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+
+    /* Path aliases, like tsconfig.app.json; the Lambda bundle (infra) reads them too */
+    "paths": {
+      "@shared/*": ["./shared/*"],
+      "@server/*": ["./server/*"]
+    },
 
     /* Linting */
     "noUnusedLocals": true,

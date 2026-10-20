@@ -1,30 +1,53 @@
-import { GetCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { db } from './data/db.mjs'
-import { labelsFor, loadCatalog, withNames } from './data/catalog.mjs'
-import { loadMeals } from './data/meals.mjs'
-import { claimDailyCall } from './data/usage.mjs'
-import { checkAnswers, understand } from './understand/understand.mjs'
-import { getRecipe } from './recipe/recipe.mjs'
-import { suggestMeals } from './suggest/suggest.mjs'
+import {
+  GetCommand,
+  QueryCommand,
+  UpdateCommand,
+  type QueryCommandOutput,
+} from '@aws-sdk/lib-dynamodb'
+import type {
+  APIGatewayProxyEventV2WithJWTAuthorizer,
+  APIGatewayProxyStructuredResultV2,
+} from 'aws-lambda'
+import {
+  EMPTY_PLAN_ANSWER_LABELS,
+  EMPTY_PLAN_ANSWERS,
+  isIsoDate,
+  isSlotId,
+  type Plan,
+  type PlanAnswers,
+  type PlanSlots,
+} from '@shared/week-plan/week-plan'
+import { labelsFor, loadCatalog, withNames, type Catalog } from './data/catalog.ts'
+import { db } from './data/db.ts'
+import { loadMeals } from './data/meals.ts'
+import { claimDailyCall } from './data/usage.ts'
+import { getRecipe } from './recipe/recipe.ts'
+import { suggestMeals } from './suggest/suggest.ts'
+import { checkAnswers, understand } from './understand/understand.ts'
+
+type Event = APIGatewayProxyEventV2WithJWTAuthorizer
+type Result = APIGatewayProxyStructuredResultV2
 
 const PLANS_TABLE = process.env.PLANS_TABLE
 // Each call costs Bedrock tokens; this caps what one user can spend in a day.
 const UNDERSTAND_CALLS_PER_DAY = 20
 
-export const handler = async (event) => {
+export const handler = async (event: Event): Promise<Result> => {
   try {
     return await route(event)
   } catch (error) {
     console.error('request failed', event.routeKey, error)
-    if (error.name === 'ThrottlingException') {
+    if (error instanceof Error && error.name === 'ThrottlingException') {
       return json(503, { message: 'The service is busy. Please try again in a moment.' })
     }
     return json(500, { message: 'Something went wrong' })
   }
 }
 
-function route(event) {
+function route(event: Event): Promise<Result> | Result {
   const userId = event.requestContext.authorizer.jwt.claims.sub
+  // The authorizer always sets it; if it ever doesn't, refuse rather than share one plan between users.
+  if (typeof userId !== 'string' || !userId) return json(401, { message: 'Not signed in' })
 
   switch (event.routeKey) {
     case 'GET /meals':
@@ -58,25 +81,27 @@ async function getMeals() {
   )
 }
 
-function noCatalog(error) {
+function noCatalog(error: unknown): Catalog {
   console.error('catalog failed, sending meals without names', error)
-  return { ingredientById: new Map(), cuisineById: new Map() }
+  return { ingredients: [], cuisines: [], ingredientById: new Map(), cuisineById: new Map() }
 }
 
 async function getCatalog() {
   const { ingredients, cuisines } = await loadCatalog()
+  // Listed field by field, so a field added to the table isn't sent by accident.
   return json(200, {
-    ingredients: ingredients.map(withoutType),
-    cuisines: cuisines.map(withoutType),
+    ingredients: ingredients.map(({ id, name, category, unit, emoji }) => ({
+      id,
+      name,
+      category,
+      unit,
+      emoji,
+    })),
+    cuisines: cuisines.map(({ id, name }) => ({ id, name })),
   })
 }
 
-// `type` is how the table groups items, not part of the API.
-function withoutType({ type, ...item }) {
-  return item
-}
-
-async function recipeFor(mealId) {
+async function recipeFor(mealId: string | undefined) {
   if (typeof mealId !== 'string' || !MEAL_ID.test(mealId)) {
     return json(400, { message: 'Invalid meal id' })
   }
@@ -85,8 +110,8 @@ async function recipeFor(mealId) {
   return recipe ? json(200, recipe) : json(404, { message: 'Meal not found' })
 }
 
-async function getPlan(userId, weekStart) {
-  if (!isWeekStart(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
+async function getPlan(userId: string, weekStart: string | undefined) {
+  if (!isIsoDate(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
 
   const { Item } = await db.send(
     new GetCommand({ TableName: PLANS_TABLE, Key: { userId, weekStart }, ConsistentRead: true }),
@@ -95,11 +120,11 @@ async function getPlan(userId, weekStart) {
 }
 
 // A Query returns at most 1 MB, so keep reading while DynamoDB says there's another page.
-async function getPlanHistory(userId) {
-  const plans = []
-  let startKey
+async function getPlanHistory(userId: string) {
+  const plans: Plan[] = []
+  let startKey: QueryCommandOutput['LastEvaluatedKey']
   do {
-    const page = await db.send(
+    const page: QueryCommandOutput = await db.send(
       new QueryCommand({
         TableName: PLANS_TABLE,
         KeyConditionExpression: 'userId = :userId',
@@ -110,19 +135,19 @@ async function getPlanHistory(userId) {
         ExclusiveStartKey: startKey,
       }),
     )
-    plans.push(...page.Items)
+    plans.push(...((page.Items ?? []) as Plan[]))
     startKey = page.LastEvaluatedKey
   } while (startKey)
 
   return json(200, { plans: plans.filter(hasMeals) })
 }
 
-function hasMeals(plan) {
+function hasMeals(plan: Plan) {
   return Object.keys(plan.slots ?? {}).length > 0
 }
 
-async function getSuggestions(userId, weekStart) {
-  if (!isWeekStart(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
+async function getSuggestions(userId: string, weekStart: string | undefined) {
+  if (!isIsoDate(weekStart)) return json(400, { message: 'week must look like 2026-09-28' })
 
   const [{ Item }, meals] = await Promise.all([
     db.send(
@@ -130,13 +155,15 @@ async function getSuggestions(userId, weekStart) {
     ),
     loadMeals(),
   ])
-  return json(200, suggestMeals(meals, Item?.answers))
+  // Answers saved before a field existed don't have it.
+  const answers: PlanAnswers = { ...EMPTY_PLAN_ANSWERS, ...Item?.answers }
+  return json(200, suggestMeals(meals, answers))
 }
 
 // UpdateCommand, not PutCommand: a Put would replace the whole item and delete the answers.
-async function savePlan(userId, body) {
+async function savePlan(userId: string, body: string | undefined) {
   const plan = parseJson(body)
-  if (!plan || !isWeekStart(plan.weekStart) || !isSlots(plan.slots)) {
+  if (!isObject(plan) || !isIsoDate(plan.weekStart) || !isSlots(plan.slots)) {
     return json(400, { message: 'Invalid plan' })
   }
 
@@ -144,9 +171,9 @@ async function savePlan(userId, body) {
   return json(200, { weekStart: plan.weekStart, slots: plan.slots })
 }
 
-async function saveAnswers(userId, body) {
+async function saveAnswers(userId: string, body: string | undefined) {
   const request = parseJson(body)
-  if (!request || !isWeekStart(request.weekStart) || !isObject(request.answers)) {
+  if (!isObject(request) || !isIsoDate(request.weekStart) || !isObject(request.answers)) {
     return json(400, { message: 'Invalid answers' })
   }
 
@@ -156,7 +183,7 @@ async function saveAnswers(userId, body) {
 }
 
 /** Sets one field of a plan, creating the plan if it doesn't exist yet. */
-function update(userId, weekStart, field, value) {
+function update(userId: string, weekStart: string, field: string, value: unknown) {
   return db.send(
     new UpdateCommand({
       TableName: PLANS_TABLE,
@@ -168,9 +195,9 @@ function update(userId, weekStart, field, value) {
   )
 }
 
-async function understandText(userId, body) {
+async function understandText(userId: string, body: string | undefined) {
   const request = parseJson(body)
-  const text = typeof request?.text === 'string' ? request.text.trim() : ''
+  const text = isObject(request) && typeof request.text === 'string' ? request.text.trim() : ''
   if (!text || text.length > 2000) {
     return json(400, { message: 'text must be 1 to 2000 characters' })
   }
@@ -180,35 +207,35 @@ async function understandText(userId, body) {
 
   const [answers, catalog, meals] = await Promise.all([
     understand(text),
-    loadCatalog(),
+    loadCatalog().catch(logMissingCatalog),
     loadMeals(),
   ])
-  return json(200, { ...answers, labels: labelsFor(answers, catalog, meals) })
+  const labels = catalog ? labelsFor(answers, catalog, meals) : EMPTY_PLAN_ANSWER_LABELS
+  return json(200, { ...answers, labels })
 }
 
-const SLOT_ID =
-  /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) (Breakfast|Lunch|Dinner)$/
+// The AI call is already paid for: send the answers without names rather than fail.
+function logMissingCatalog(error: unknown) {
+  console.error('catalog failed, answers sent without names', error)
+  return null
+}
+
 const MEAL_ID = /^[a-z0-9-]{1,80}$/
 
-function isWeekStart(value) {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-}
-
-function isObject(value) {
+function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function isSlots(value) {
+function isSlots(value: unknown): value is PlanSlots {
   return (
     isObject(value) &&
     Object.entries(value).every(
-      ([slotId, mealId]) =>
-        SLOT_ID.test(slotId) && typeof mealId === 'string' && MEAL_ID.test(mealId),
+      ([slotId, mealId]) => isSlotId(slotId) && typeof mealId === 'string' && MEAL_ID.test(mealId),
     )
   )
 }
 
-function parseJson(text) {
+function parseJson(text: string | undefined): unknown {
   try {
     return JSON.parse(text ?? '')
   } catch {
@@ -216,7 +243,7 @@ function parseJson(text) {
   }
 }
 
-function json(statusCode, data) {
+function json(statusCode: number, data: unknown): Result {
   return {
     statusCode,
     headers: { 'content-type': 'application/json' },

@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { claimDailyCall } from './usage.mjs'
+import { claimDailyCall } from './usage.ts'
 
 const send = vi.hoisted(() => vi.fn())
-vi.mock('./db.mjs', () => ({ db: { send } }))
+// Only db is faked; the module's helpers (isConditionFailed) stay real.
+vi.mock('./db.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./db.ts')>()),
+  db: { send },
+}))
 
 function conditionFailed() {
   const error = new Error('The conditional request failed')

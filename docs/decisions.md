@@ -38,6 +38,7 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 | 29  | [Weekly plan on phones: tap to place, drag and drop only on large screens](#29-weekly-plan-on-phones-tap-to-place-drag-and-drop-only-on-large-screens)            | Current           |
 | 30  | [The meals table is the only copy of the meals; backups with PITR](#30-the-meals-table-is-the-only-copy-of-the-meals-backups-with-pitr)                           | Current           |
 | 31  | [Ingredients and cuisines in one DynamoDB catalogue table](#31-ingredients-and-cuisines-in-one-dynamodb-catalogue-table)                                          | Current           |
+| 32  | [The Lambda in TypeScript, sharing types with the frontend](#32-the-lambda-in-typescript-sharing-types-with-the-frontend)                                         | Current           |
 
 ## 1. Backend on AWS with a single database
 
@@ -381,3 +382,13 @@ Each entry says what was chosen, why, what else was considered, and the trade-of
 **Instead of:** a table per kind (the same cost to read, but a table for 5 cuisines and a third one for aliases), keeping them in `shared/` (needs a deploy for every new ingredient), a copy per user (the same facts stored many times, and fixes don't reach everyone).
 
 **Trade-off:** ingredient and cuisine ids become plain strings, so typos are caught by runtime checks, not by TypeScript. The full list stays in the AI prompt while it is small (~1,000 tokens at 150 ingredients); past roughly 1,000 ingredients the AI needs a search tool instead.
+
+## 32. The Lambda in TypeScript, sharing types with the frontend
+
+**Chosen:** `server/` is TypeScript and imports from `shared/` with the same `@shared/` alias as the frontend: `MEAL_TYPES`, `EMPTY_PLAN_ANSWERS`, `isSlotId`, and the API types. The stored meal type (`MealItem`) is built from the shared `Meal` type, and `withNames` returns a `Meal`, so a response that doesn't match what the frontend reads is a compile error. `tsconfig.node.json` uses `moduleResolution: "bundler"` with the alias: nothing in `server/` or `infra/` runs in plain Node (esbuild bundles the Lambda with that tsconfig, tsx runs CDK and `npm run eval`, Vitest runs the tests). Lambda events are typed with `@types/aws-lambda`. ESLint and `tsc` now check the backend too.
+
+**Why:** the backend had its own copies (`MEAL_TYPES`, empty answers, a slot-id regex) and nothing checked that its responses matched the frontend's types. The agent will be the most complex backend code, so it should start typed.
+
+**Instead of:** JSDoc types in `.mjs` (types written as comments), Node's own resolution (`nodenext`: every import inside `shared/` would need a `.ts` extension), keeping JavaScript (copies drift, response shapes unchecked).
+
+**Trade-off:** what DynamoDB and Bedrock return is still cast (`as MealItem[]`) and only checked at runtime where it matters (`clean()` for the AI's answers). Test mocks keep the real `db.ts` and replace only `db`.

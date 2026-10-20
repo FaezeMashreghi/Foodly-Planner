@@ -10,8 +10,8 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 2. **Open the current plan after sign-in:** today `/` always goes to the plan questions. If the user has a plan whose 7 days include today (or one starting in the next 6 days), open it in the weekly plan instead. Plans can start on any day, so the browser can't work out the `weekStart`: add `GET /plan/current?today=2026-10-07` (the browser sends its own date, because "today" depends on the user's timezone), a DynamoDB `Query` on `userId` with `weekStart BETWEEN today - 6 AND today + 6`, `Limit: 1` (the earliest, so a plan in progress wins over an upcoming one). `/weekly-plan` without `?start` (the nav link) should use the same lookup; today it opens the plan starting this Monday.
 3. **Custom domain** for `foodlyplanner.com`: Cloudflare Registrar (~$10.50/year, sold at cost, free DNS) rather than Route 53 ($16/year + $6/year for the hosted zone). In Amplify choose manual configuration, add its records in Cloudflare as **DNS only** (grey cloud, not proxied, or the certificate check fails), then add the new origin to `ALLOWED_ORIGINS` and the CSP.
 4. **IAM Identity Center admin user** for daily AWS work. My CLI still signs in as the root user (with MFA and temporary credentials), which decision 9 says to avoid.
-5. **Backend tests for `index.mjs`**: routing, input validation (`400`), the daily limit (`429`), and the user id coming from the token.
-6. **One list of ingredient and cuisine ids:** `understand.mjs` still has its own copy of the lists in `shared/meal/`. CDK's bundler can import `shared/` now. Converting the backend to TypeScript would fix this too.
+5. **Backend tests for `index.ts`**: routing, input validation (`400`), the daily limit (`429`), and the user id coming from the token.
+6. **One list of ingredient and cuisine ids:** `understand.ts` still has its own copy for the prompt; build it from `loadCatalog()` (decision 31) as part of the agent's new prompt.
 
 ## Release and deploy (single-page app)
 
@@ -34,11 +34,11 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 
 ## Backend
 
-- [ ] **Bedrock time limit:** one shared Bedrock client (like `data/db.mjs`) with a `requestTimeout` of ~15 s. Today a hanging call is killed by the Lambda's 20 s timeout before our `catch` can log it.
+- [ ] **Bedrock time limit:** one shared Bedrock client (like `data/db.ts`) with a `requestTimeout` of ~15 s. Today a hanging call is killed by the Lambda's 20 s timeout before our `catch` can log it.
 - [ ] **Protect the data:** `deletionProtection: true` and point-in-time recovery on `PlansTable` and `MealsTable` (AI recipes cost tokens). `RETAIN` only protects against CDK deleting them.
 - [ ] **See throttled requests:** access logs on the API stage (API Gateway's own 429s never reach the Lambda), and JSON logs on the Lambda so CloudWatch Logs Insights can search by field.
 - [ ] **Real dates only:** `isWeekStart` accepts `2026-02-31` and `9999-01-01`. Check that the date exists and is within about a year of today.
-- [ ] **Prompt caching comment:** `understand.mjs` says the prompt is sorted "for prompt caching", but caching isn't on. It's probably not worth it: the prompt (~1,570 tokens) is likely below the model's minimum, and with few users the 5-minute cache would expire between calls. Fix the comment.
+- [ ] **Prompt caching comment:** `understand.ts` says the prompt is sorted "for prompt caching", but caching isn't on. It's probably not worth it: the prompt (~1,570 tokens) is likely below the model's minimum, and with few users the 5-minute cache would expire between calls. Fix the comment.
 - [ ] **Recipes in the daily limit:** count `POST /meals/{id}/recipe` with `claimDailyCall(userId, 'recipe', …)` when a new recipe is written. A meal whose recipe keeps failing calls Bedrock on every click.
 - [ ] **Node 24** (`Runtime.NODEJS_24_X`): Node 22 is in maintenance.
 - [ ] **Stale comment:** `shared/meal/meal.ts` still says meals are "Stored as `_id` in MongoDB".
@@ -69,7 +69,7 @@ I keep this list honest on purpose: it shows what I know is missing and in what 
 - [ ] **Sign up** then **confirm email**: "account already exists", a wrong or expired code, then signed in.
 - [ ] **Reset a forgotten password**: code sent, wrong code explained, new password rules.
 - [ ] **Plan questions end to end** (`PlanQuestionsFlow`, `src/api/` mocked): AI answers → review → start day → saved; a failed save shows an error and keeps the answers.
-- [ ] **The Lambda handler** (`index.mjs`), see "Next".
+- [ ] **The Lambda handler** (`index.ts`), see "Next".
 
 ## Performance
 
