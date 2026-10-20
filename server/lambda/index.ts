@@ -17,7 +17,7 @@ import {
   type PlanAnswers,
   type PlanSlots,
 } from '@shared/week-plan/week-plan'
-import { labelsFor, loadCatalog, withNames } from './data/catalog.ts'
+import { labelsFor, loadCatalog, withNames, type Catalog } from './data/catalog.ts'
 import { db } from './data/db.ts'
 import { loadMeals } from './data/meals.ts'
 import { claimDailyCall } from './data/usage.ts'
@@ -81,9 +81,9 @@ async function getMeals() {
   )
 }
 
-function noCatalog(error) {
+function noCatalog(error: unknown): Catalog {
   console.error('catalog failed, sending meals without names', error)
-  return { ingredientById: new Map(), cuisineById: new Map() }
+  return { ingredients: [], cuisines: [], ingredientById: new Map(), cuisineById: new Map() }
 }
 
 async function getCatalog() {
