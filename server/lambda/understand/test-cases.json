@@ -80,7 +80,7 @@
       "cuisines": ["persian"],
       "easyOnly": true,
       "maxPrepMinutes": 20,
-      "mustHaveMealId": null,
+      "mustHaveMealId": "kashk-e-bademjan",
       "mustHaveText": "کشک بادمجون",
       "notes": []
     }
@@ -136,7 +136,7 @@
       "cuisines": [],
       "easyOnly": false,
       "maxPrepMinutes": 45,
-      "mustHaveMealId": null,
+      "mustHaveMealId": "kuku-sabzi",
       "mustHaveText": "kuku sabzi",
       "notes": []
     }
