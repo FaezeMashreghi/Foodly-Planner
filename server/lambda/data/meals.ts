@@ -19,6 +19,8 @@ const FIELDS = [
   'cuisine',
   'difficulty',
   'prepMinutes',
+  'activeMinutes',
+  'dishStyles',
   'servings',
   'ingredients',
   'image',
