@@ -55,6 +55,17 @@ export class FoodlyStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     })
 
+    // Agent chats, deleted 7 days after the last message. The user's choices are saved to their
+    // profile and plans, so nothing lives only here.
+    const chatsTable = new Table(this, 'ChatsTable', {
+      tableName: 'foodly-chats',
+      partitionKey: { name: 'userId', type: AttributeType.STRING },
+      sortKey: { name: 'chatId', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'expiresAt',
+      removalPolicy: RemovalPolicy.DESTROY,
+    })
+
     const backend = new NodejsFunction(this, 'Backend', {
       entry: path.join(import.meta.dirname, '../server/lambda/index.ts'),
       runtime: Runtime.NODEJS_22_X,
@@ -67,6 +78,7 @@ export class FoodlyStack extends Stack {
         MEALS_TABLE: mealsTable.tableName,
         USAGE_TABLE: usageTable.tableName,
         CATALOG_TABLE: catalogTable.tableName,
+        CHATS_TABLE: chatsTable.tableName,
         MODEL_ID: `eu.${HAIKU_MODEL}`,
       },
       bundling: {
@@ -85,6 +97,7 @@ export class FoodlyStack extends Stack {
     mealsTable.grant(backend, 'dynamodb:Scan', 'dynamodb:GetItem', 'dynamodb:UpdateItem')
     usageTable.grant(backend, 'dynamodb:UpdateItem')
     catalogTable.grant(backend, 'dynamodb:Query')
+    chatsTable.grant(backend, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem')
     // The "eu." inference profile sends each call to one of the EU regions.
     backend.addToRolePolicy(
       new PolicyStatement({

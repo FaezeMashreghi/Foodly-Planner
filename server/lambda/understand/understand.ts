@@ -1,15 +1,8 @@
-import {
-  BedrockRuntimeClient,
-  ConverseCommand,
-  type TokenUsage,
-  type Tool,
-} from '@aws-sdk/client-bedrock-runtime'
+import { ConverseCommand, type TokenUsage, type Tool } from '@aws-sdk/client-bedrock-runtime'
 import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import { bedrock, MODEL_ID } from '@server/lambda/data/bedrock.ts'
 import { loadMeals, type MealItem } from '@server/lambda/data/meals.ts'
 
-const bedrock = new BedrockRuntimeClient({})
-// The fallback is for eval.ts, run on your machine; the Lambda gets it from infra.
-export const MODEL_ID = process.env.MODEL_ID ?? 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
 const TOOL_NAME = 'save_answers'
 
 const INGREDIENTS_BY_CATEGORY: Record<string, string> = {
