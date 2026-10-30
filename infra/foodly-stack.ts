@@ -71,8 +71,8 @@ export class FoodlyStack extends Stack {
       runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       memorySize: 256,
-      // The AI routes wait for Bedrock.
-      timeout: Duration.seconds(20),
+      // The agent can call Bedrock several times in one request. API Gateway gives up at 30s.
+      timeout: Duration.seconds(28),
       environment: {
         PLANS_TABLE: plansTable.tableName,
         MEALS_TABLE: mealsTable.tableName,
@@ -97,7 +97,7 @@ export class FoodlyStack extends Stack {
     mealsTable.grant(backend, 'dynamodb:Scan', 'dynamodb:GetItem', 'dynamodb:UpdateItem')
     usageTable.grant(backend, 'dynamodb:UpdateItem')
     catalogTable.grant(backend, 'dynamodb:Query')
-    chatsTable.grant(backend, 'dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem')
+    chatsTable.grant(backend, 'dynamodb:GetItem', 'dynamodb:PutItem')
     // The "eu." inference profile sends each call to one of the EU regions.
     backend.addToRolePolicy(
       new PolicyStatement({
@@ -134,6 +134,7 @@ export class FoodlyStack extends Stack {
       [HttpMethod.GET, '/plan/suggestions'],
       [HttpMethod.PUT, '/plan/answers'],
       [HttpMethod.POST, '/plan/understand'],
+      [HttpMethod.POST, '/plan/chat'],
       [HttpMethod.GET, '/plans'],
     ]
     const httpRoutes = routes.flatMap(([method, routePath]) =>
@@ -147,6 +148,7 @@ export class FoodlyStack extends Stack {
     // Plain JSON passed to CloudFormation as is, so the keys use its PascalCase names.
     stage.routeSettings = {
       'POST /plan/understand': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 5 },
+      'POST /plan/chat': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 10 },
       'POST /meals/{id}/recipe': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 5 },
     }
     // The stage can only name routes that already exist.
