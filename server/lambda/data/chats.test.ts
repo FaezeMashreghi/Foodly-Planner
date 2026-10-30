@@ -31,6 +31,17 @@ describe('getChat', () => {
     expect(send.mock.calls[0][0].input.Key).toEqual({ userId: 'user-1', chatId: 'chat-1' })
   })
 
+  // DynamoDB deletes expired items in the background, often days later.
+  it('returns nothing for a chat past its expiry that DynamoDB has not deleted yet', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-30T12:00:00Z'))
+    send.mockResolvedValue({
+      Item: { ...chat, expiresAt: Date.parse('2026-10-30T11:59:59Z') / 1000 },
+    })
+
+    expect(await getChat('user-1', 'chat-1')).toBeUndefined()
+  })
+
   it('returns nothing when there is no such chat for this user', async () => {
     send.mockResolvedValue({})
 

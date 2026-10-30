@@ -19,7 +19,9 @@ export async function getChat(userId: string, chatId: string) {
   const { Item } = await db.send(
     new GetCommand({ TableName: CHATS_TABLE, Key: { userId, chatId } }),
   )
-  return Item as Chat | undefined
+  // TTL deletes expired items in the background, often days late, so check the time here too.
+  if (!Item || Item.expiresAt <= Date.now() / 1000) return undefined
+  return Item as Chat
 }
 
 export async function saveChat(chat: Chat) {
