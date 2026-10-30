@@ -22,6 +22,12 @@ export function runSearchMeals(input: unknown, meals: MealItem[], known: KnownId
   return searchMeals(meals, cleanSearchInput(input, known))
 }
 
+/** Adds what earlier searches in the chat avoided, so the model can't drop an allergy later. */
+export function withEarlierAvoid(search: SearchInput, earlier: string[] = []): SearchInput {
+  const avoid = [...new Set([...earlier, ...(search.avoid ?? [])])]
+  return avoid.length ? { ...search, avoid } : search
+}
+
 /** The week's answers from a cleaned search. dishStyles and mealType aren't saved answers yet. */
 export function planAnswersFrom(search: SearchInput): PlanAnswers {
   return {
@@ -51,7 +57,8 @@ export function searchMealsTool({ ingredientIds, cuisineIds, mealIds }: KnownIds
             mealType: { type: 'string', enum: [...MEAL_TYPES] },
             avoid: {
               ...ingredients,
-              description: 'Allergies and ingredients the user must not eat',
+              description:
+                'Allergies and ingredients the user must not eat. Always send it: [] only when they have none.',
             },
             expiring: { ...ingredients, description: 'Ingredients going off soon, to use up' },
             wantMore: { ...ingredients, description: 'Ingredients the user would like more of' },
@@ -65,6 +72,7 @@ export function searchMealsTool({ ingredientIds, cuisineIds, mealIds }: KnownIds
               description: 'A dish the user asked for by name',
             },
           },
+          required: ['mealType', 'avoid'],
         },
       },
     },

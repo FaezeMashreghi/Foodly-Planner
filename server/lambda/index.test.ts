@@ -151,20 +151,25 @@ describe('POST /plan/chat', () => {
     chatId: 'chat-1',
     messages: [userSays('plan my week'), agentSays('Any allergies?')],
     questionsAsked,
+    version: 1,
   })
 
   function chatRequest(body: object) {
     return { ...request('POST /plan/chat'), body: JSON.stringify(body) }
   }
 
-  function fakeDb({ chat, overLimit = false }: { chat?: object; overLimit?: boolean } = {}) {
+  const conditionFailed = () =>
+    Promise.reject(Object.assign(new Error('failed'), { name: 'ConditionalCheckFailedException' }))
+
+  function fakeDb({
+    chat,
+    overLimit = false,
+    changedMeanwhile = false,
+  }: { chat?: object; overLimit?: boolean; changedMeanwhile?: boolean } = {}) {
     send.mockImplementation((command) => {
       if (command instanceof GetCommand) return Promise.resolve(chat ? { Item: chat } : {})
-      if (command instanceof UpdateCommand && overLimit) {
-        return Promise.reject(
-          Object.assign(new Error('limit'), { name: 'ConditionalCheckFailedException' }),
-        )
-      }
+      if (command instanceof UpdateCommand && overLimit) return conditionFailed()
+      if (command instanceof PutCommand && changedMeanwhile) return conditionFailed()
       if (command instanceof PutCommand || command instanceof UpdateCommand)
         return Promise.resolve({})
       return Promise.resolve({ Items: [] })
@@ -194,6 +199,7 @@ describe('POST /plan/chat', () => {
       chatId: body.chatId,
       messages: [userSays('plan my week'), agentSays('Any allergies?')],
       questionsAsked: 1,
+      version: 1,
     })
   })
 
@@ -227,6 +233,17 @@ describe('POST /plan/chat', () => {
     expect(savedChat().questionsAsked).toBe(1)
   })
 
+  it('keeps allergies from earlier searches in the chat when the model leaves them out', async () => {
+    const plan = { ...EMPTY_PLAN_ANSWERS, avoid: ['walnut'] }
+    fakeDb({ chat: { ...existingChat(1), plan } })
+    callModel.mockResolvedValueOnce(searchCall).mockResolvedValueOnce(reply('Here are 3 meals'))
+
+    const response = await handler(chatRequest({ chatId: 'chat-1', message: 'something quick' }))
+
+    expect(JSON.parse(response.body ?? '').plan.answers.avoid).toEqual(['walnut'])
+    expect(savedChat().plan).toMatchObject({ avoid: ['walnut'], maxPrepMinutes: 30 })
+  })
+
   it('keeps returning the last answers when the agent replies without searching', async () => {
     const plan = { ...EMPTY_PLAN_ANSWERS, maxPrepMinutes: 30 }
     fakeDb({ chat: { ...existingChat(1), plan } })
@@ -246,6 +263,16 @@ describe('POST /plan/chat', () => {
     const newMessage = callModel.mock.calls[0][0][2]
     expect(newMessage.content[0]).toEqual({ text: 'something Persian' })
     expect(newMessage.content[1].text).toMatch(/suggest/i)
+  })
+
+  it('answers 409 when the chat was saved by another request meanwhile, instead of losing a turn', async () => {
+    fakeDb({ chat: existingChat(1), changedMeanwhile: true })
+    callModel.mockResolvedValue(reply('How much time do you have?'))
+
+    const response = await handler(chatRequest({ chatId: 'chat-1', message: 'no allergies' }))
+
+    expect(response.statusCode).toBe(409)
+    expect(JSON.parse(response.body ?? '').code).toBe('chat-busy')
   })
 
   it("answers 404 for a chat that doesn't exist or has expired", async () => {

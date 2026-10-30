@@ -34,6 +34,7 @@ import {
   planAnswersFrom,
   SEARCH_MEALS,
   searchMealsTool,
+  withEarlierAvoid,
 } from './suggest/search-tool.ts'
 import { searchMeals, suggestMeals, type SearchInput } from './suggest/suggest.ts'
 import { checkAnswers, understand } from './understand/understand.ts'
@@ -229,7 +230,7 @@ async function chatMessage(userId: string, body: string | undefined) {
   const chatId = stringField(request, 'chatId')
   const chat: Chat | undefined = chatId
     ? await getChat(userId, chatId)
-    : { userId, chatId: randomUUID(), messages: [], questionsAsked: 0 }
+    : { userId, chatId: randomUUID(), messages: [], questionsAsked: 0, version: 0 }
   if (!chat) return json(404, { code: 'chat-not-found', message: 'This chat has expired' })
 
   const [meals, catalog] = await Promise.all([loadMeals(), loadCatalog()])
@@ -238,7 +239,7 @@ async function chatMessage(userId: string, body: string | undefined) {
   let search: SearchInput | undefined
   const runTool: RunTool = async (name, input) => {
     if (name === SEARCH_MEALS) {
-      search = cleanSearchInput(input, known)
+      search = withEarlierAvoid(cleanSearchInput(input, known), (search ?? chat.plan)?.avoid)
       return searchMeals(meals, search)
     }
     throw new Error(`Unknown tool: ${name}`)
@@ -251,7 +252,9 @@ async function chatMessage(userId: string, body: string | undefined) {
 
   if (search) chat.plan = planAnswersFrom(search)
   else chat.questionsAsked++
-  await saveChat(chat)
+  if (!(await saveChat(chat))) {
+    return json(409, { code: 'chat-busy', message: 'This chat changed in another tab' })
+  }
 
   const plan = chat.plan && { answers: chat.plan, labels: labelsFor(chat.plan, catalog, meals) }
   return json(200, { chatId: chat.chatId, reply: textOf(chat.messages.at(-1)), plan })

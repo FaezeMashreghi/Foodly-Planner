@@ -12,6 +12,7 @@ const chat: Chat = {
   chatId: 'chat-1',
   messages: [{ role: 'user', content: [{ text: 'busy week' }] }],
   questionsAsked: 1,
+  version: 3,
 }
 
 beforeEach(() => {
@@ -38,14 +39,30 @@ describe('getChat', () => {
 })
 
 describe('saveChat', () => {
-  it('saves the whole chat, deleted 7 days after this message (TTL in seconds)', async () => {
+  it('saves the whole chat with the next version, deleted 7 days after this message', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-23T12:00:00Z'))
     send.mockResolvedValue({})
 
-    await saveChat(chat)
+    expect(await saveChat(chat)).toBe(true)
 
     const sevenDaysLater = Date.parse('2026-10-30T12:00:00Z') / 1000
-    expect(send.mock.calls[0][0].input.Item).toEqual({ ...chat, expiresAt: sevenDaysLater })
+    expect(send.mock.calls[0][0].input.Item).toEqual({
+      ...chat,
+      version: 4,
+      expiresAt: sevenDaysLater,
+    })
+  })
+
+  it('only saves over the version it loaded, and says when another save got there first', async () => {
+    send.mockRejectedValue(
+      Object.assign(new Error('changed'), { name: 'ConditionalCheckFailedException' }),
+    )
+
+    expect(await saveChat(chat)).toBe(false)
+
+    const { ConditionExpression, ExpressionAttributeValues } = send.mock.calls[0][0].input
+    expect(ConditionExpression).toBe('attribute_not_exists(version) OR version = :loaded')
+    expect(ExpressionAttributeValues).toEqual({ ':loaded': 3 })
   })
 })
