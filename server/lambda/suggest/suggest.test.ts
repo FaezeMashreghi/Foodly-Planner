@@ -22,7 +22,8 @@ const withIngredients = (...ids: string[]): MealItem['ingredients'] =>
   ids.map((ingredientId) => ({ ingredientId, amount: 1, unit: 'piece' }))
 
 describe('suggestMeals', () => {
-  it('puts the must-have dish first, even with an avoided ingredient, and leaves out the rest', () => {
+  // The suggestions screen can't warn about an allergen yet, so even a dish asked for by name is left out.
+  it('leaves out meals with an ingredient to avoid, even the must-have dish', () => {
     const meals = [
       meal('salad', { ingredients: withIngredients('spinach') }),
       meal('fesenjan', { ingredients: withIngredients('walnut') }),
@@ -35,7 +36,7 @@ describe('suggestMeals', () => {
       mustHaveMealId: 'fesenjan',
     }
 
-    expect(suggestMeals(meals, answers).Dinner).toEqual(['fesenjan', 'salad'])
+    expect(suggestMeals(meals, answers).Dinner).toEqual(['salad'])
   })
 
   it('lists each meal type separately, with at most 10 each', () => {
@@ -164,14 +165,8 @@ describe('searchMeals', () => {
 
     // Out: fesenjan and kuku-sabzi (walnut), ghormeh-sabzi (too slow), menemen (breakfast only).
     // Persian: adasi (persian 2 + soup 2 = 4), baghala-ghatogh and mirza-ghasemi (2 each, by id).
-    // Then other cuisines fill the rest: spinach-soup (spinach 3 + soup 2) beats teriyaki (0).
-    expect(ids(result)).toEqual([
-      'adasi',
-      'baghala-ghatogh',
-      'mirza-ghasemi',
-      'spinach-soup',
-      'chicken-teriyaki-rice',
-    ])
+    // 3 Persian allow 1 other (at least 70%): spinach-soup (spinach 3 + soup 2) beats teriyaki (0).
+    expect(ids(result)).toEqual(['adasi', 'baghala-ghatogh', 'mirza-ghasemi', 'spinach-soup'])
   })
 
   describe('when the user asks for a cuisine', () => {
@@ -191,14 +186,24 @@ describe('searchMeals', () => {
       expect(result.every((found) => found.cuisine === 'persian')).toBe(true)
     })
 
-    it('fills up to 10 meals with other cuisines when too few of that cuisine fit', () => {
-      const result = searchMeals([...asian(12), ...persian(2)], wishes).meals
+    it('keeps at least 70% of the meals in that cuisine, others only fill the rest', () => {
+      const result = searchMeals([...asian(5), ...persian(8)], wishes).meals
 
       expect(result.map((found) => found.cuisine)).toEqual([
-        'persian',
-        'persian',
-        ...Array(8).fill('asian'),
+        ...Array(8).fill('persian'),
+        'asian',
+        'asian',
       ])
+    })
+
+    it('adds no other cuisine when that would drop below 70%', () => {
+      const result = searchMeals([...asian(12), ...persian(2)], wishes).meals
+
+      expect(result.map((found) => found.cuisine)).toEqual(['persian', 'persian'])
+    })
+
+    it('returns nothing when no meal of that cuisine fits, so the agent can say so', () => {
+      expect(searchMeals(asian(5), wishes).meals).toEqual([])
     })
   })
 

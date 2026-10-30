@@ -37,14 +37,19 @@ export function scoreMeal(meal: MealItem, answers: PlanAnswers) {
 
 /**
  * The meal ids to suggest for each meal type, best first. Meals with an ingredient to avoid are
- * left out, except the must-have dish (the user asked for it by name), which comes first; the rest are sorted
- * by score, then by id so the same answers always give the same list.
+ * always left out, even the must-have dish: this screen can't warn about an allergen yet. The
+ * must-have dish comes first; the rest are sorted by score, then by id so the same answers always
+ * give the same list.
  */
 export function suggestMeals(
   meals: MealItem[],
   answers: PlanAnswers = EMPTY_PLAN_ANSWERS,
 ): PlanSuggestions {
-  const ranked = rankMeals(meals.filter(isAllowed(answers)), answers)
+  const hasAvoided = containsAvoided(answers)
+  const ranked = rankMeals(
+    meals.filter((meal) => !hasAvoided(meal)),
+    answers,
+  )
 
   return Object.fromEntries(
     MEAL_TYPES.map((mealType) => [
@@ -57,12 +62,9 @@ export function suggestMeals(
   ) as PlanSuggestions
 }
 
-/** The avoid list is a hard filter for every meal except the must-have dish. */
-function isAllowed(answers: PlanAnswers) {
+function containsAvoided(answers: PlanAnswers) {
   const avoid = new Set(answers.avoid)
-  return (meal: MealItem) =>
-    meal.id === answers.mustHaveMealId ||
-    !meal.ingredients.some((item) => avoid.has(item.ingredientId))
+  return (meal: MealItem) => meal.ingredients.some((item) => avoid.has(item.ingredientId))
 }
 
 /**
@@ -91,14 +93,16 @@ function rankMeals(
 }
 
 export const SEARCH_LIMIT = 10
+/** When the user names a cuisine, other cuisines are at most this share of the result. */
+const OTHER_CUISINE_SHARE = 0.3
 
 export type SearchInput = Partial<PlanAnswers> & { dishStyles?: DishStyle[]; mealType?: MealType }
 
 /**
  * The best meals for the agent. Avoided ingredients, the meal type and the time limit are hard
  * filters, except for a dish asked for by name: it skips them all and comes first (with the avoided
- * ingredients it has, so the model can warn the user). Then meals in the cuisines the user named;
- * other cuisines only fill the rest.
+ * ingredients it has, so the model can warn the user). When the user names cuisines, at least 70%
+ * of the result is in them.
  */
 export function searchMeals(meals: MealItem[], input: SearchInput) {
   const answers = { ...EMPTY_PLAN_ANSWERS, ...input }
@@ -110,8 +114,10 @@ export function searchMeals(meals: MealItem[], input: SearchInput) {
   const dishStylePoints = (meal: MealItem) =>
     meal.dishStyles?.some((style) => styles.has(style)) ? POINTS.dishStyle : 0
 
-  const allowed = meals.filter(isAllowed(answers)).filter((meal) => {
+  const hasAvoided = containsAvoided(answers)
+  const allowed = meals.filter((meal) => {
     if (isMustHave(meal)) return true
+    if (hasAvoided(meal)) return false
     if (input.mealType && !meal.mealTypes.includes(input.mealType)) return false
     return answers.maxPrepMinutes === null || meal.prepMinutes <= answers.maxPrepMinutes
   })
@@ -119,10 +125,13 @@ export function searchMeals(meals: MealItem[], input: SearchInput) {
   const ranked = rankMeals(allowed, answers, {
     extraPoints: dishStylePoints,
     isPreferred: inAskedCuisine,
-  }).slice(0, SEARCH_LIMIT)
+  })
+  const picked = answers.cuisines.length
+    ? mostlyAsked(ranked, (meal) => inAskedCuisine(meal) || isMustHave(meal))
+    : ranked.slice(0, SEARCH_LIMIT)
 
   return {
-    meals: ranked.map((meal) => {
+    meals: picked.map((meal) => {
       const ingredientIds = meal.ingredients.map((item) => item.ingredientId)
       return {
         id: meal.id,
@@ -138,4 +147,14 @@ export function searchMeals(meals: MealItem[], input: SearchInput) {
       }
     }),
   }
+}
+
+/** The asked meals first, then other meals only while they stay within OTHER_CUISINE_SHARE. */
+function mostlyAsked(ranked: MealItem[], isAsked: (meal: MealItem) => boolean) {
+  const asked = ranked.filter(isAsked).slice(0, SEARCH_LIMIT)
+  const othersAllowed = Math.floor((asked.length * OTHER_CUISINE_SHARE) / (1 - OTHER_CUISINE_SHARE))
+  const others = ranked
+    .filter((meal) => !isAsked(meal))
+    .slice(0, Math.min(othersAllowed, SEARCH_LIMIT - asked.length))
+  return [...asked, ...others]
 }
