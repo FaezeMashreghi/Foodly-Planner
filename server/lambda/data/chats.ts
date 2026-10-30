@@ -14,14 +14,12 @@ export type Chat = {
   plan?: PlanAnswers
 }
 
-
 export async function getChat(userId: string, chatId: string) {
   const { Item } = await db.send(
     new GetCommand({ TableName: CHATS_TABLE, Key: { userId, chatId } }),
   )
   return Item as Chat | undefined
 }
-
 
 export async function saveChat(chat: Chat) {
   await db.send(
