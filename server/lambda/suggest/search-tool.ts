@@ -1,5 +1,6 @@
 import type { Tool } from '@aws-sdk/client-bedrock-runtime'
 import { DISH_STYLES, MEAL_TYPES, type DishStyle, type MealType } from '@shared/meal/meal'
+import { EMPTY_PLAN_ANSWERS, type PlanAnswers } from '@shared/week-plan/week-plan'
 import type { Catalog } from '@server/lambda/data/catalog.ts'
 import type { MealItem } from '@server/lambda/data/meals.ts'
 import { searchMeals, type SearchInput } from './suggest.ts'
@@ -19,6 +20,20 @@ export function knownIdsFrom(catalog: Catalog, meals: MealItem[]): KnownIds {
 /** What the agent gets when it calls search_meals: the model's input is always cleaned first. */
 export function runSearchMeals(input: unknown, meals: MealItem[], known: KnownIds) {
   return searchMeals(meals, cleanSearchInput(input, known))
+}
+
+/** The week's answers from a cleaned search. dishStyles and mealType aren't saved answers yet. */
+export function planAnswersFrom(search: SearchInput): PlanAnswers {
+  return {
+    ...EMPTY_PLAN_ANSWERS,
+    expiring: search.expiring ?? [],
+    wantMore: search.wantMore ?? [],
+    avoid: search.avoid ?? [],
+    cuisines: search.cuisines ?? [],
+    easyOnly: search.easyOnly ?? false,
+    maxPrepMinutes: search.maxPrepMinutes ?? null,
+    mustHaveMealId: search.mustHaveMealId ?? null,
+  }
 }
 
 /** The tool as the model sees it. The enums come from the real data, so the model picks valid ids. */
