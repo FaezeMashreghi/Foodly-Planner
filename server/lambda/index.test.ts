@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { GetCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import type { APIGatewayProxyEventV2WithJWTAuthorizer } from 'aws-lambda'
-import type { Plan } from '@shared/week-plan/week-plan'
+import { EMPTY_PLAN_ANSWERS, type Plan } from '@shared/week-plan/week-plan'
 import { handler } from './index.ts'
 
 const send = vi.hoisted(() => vi.fn())
@@ -10,6 +10,10 @@ vi.mock('./data/db.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./data/db.ts')>()),
   db: { send },
 }))
+
+// The model is faked: the route's own logic (chats, limits, the question budget) is what's tested.
+const callModel = vi.hoisted(() => vi.fn())
+vi.mock('./agent/model.ts', () => ({ bedrockModel: () => callModel }))
 
 function request(routeKey: string) {
   return {
@@ -126,5 +130,175 @@ describe('GET /plan/suggestions', () => {
 
     expect(response.statusCode).toBe(200)
     expect(JSON.parse(response.body ?? '').Breakfast).toEqual(['porridge'])
+  })
+})
+
+describe('POST /plan/chat', () => {
+  const userSays = (text: string) => ({ role: 'user', content: [{ text }] })
+  const agentSays = (text: string) => ({ role: 'assistant', content: [{ text }] })
+  const reply = (text: string) => ({ message: agentSays(text), stopReason: 'end_turn' })
+  const searchCall = {
+    message: {
+      role: 'assistant',
+      content: [
+        { toolUse: { toolUseId: 't1', name: 'search_meals', input: { maxPrepMinutes: 30 } } },
+      ],
+    },
+    stopReason: 'tool_use',
+  }
+  const existingChat = (questionsAsked: number) => ({
+    userId: 'user-1',
+    chatId: 'chat-1',
+    messages: [userSays('plan my week'), agentSays('Any allergies?')],
+    questionsAsked,
+    version: 1,
+  })
+
+  function chatRequest(body: object) {
+    return { ...request('POST /plan/chat'), body: JSON.stringify(body) }
+  }
+
+  const conditionFailed = () =>
+    Promise.reject(Object.assign(new Error('failed'), { name: 'ConditionalCheckFailedException' }))
+
+  function fakeDb({
+    chat,
+    overLimit = false,
+    changedMeanwhile = false,
+  }: { chat?: object; overLimit?: boolean; changedMeanwhile?: boolean } = {}) {
+    send.mockImplementation((command) => {
+      if (command instanceof GetCommand) return Promise.resolve(chat ? { Item: chat } : {})
+      if (command instanceof UpdateCommand && overLimit) return conditionFailed()
+      if (command instanceof PutCommand && changedMeanwhile) return conditionFailed()
+      if (command instanceof PutCommand || command instanceof UpdateCommand)
+        return Promise.resolve({})
+      return Promise.resolve({ Items: [] })
+    })
+  }
+
+  const savedChat = () =>
+    send.mock.calls.map(([command]) => command).find((command) => command instanceof PutCommand)
+      ?.input.Item as Record<string, unknown>
+
+  beforeEach(() => {
+    callModel.mockReset()
+  })
+
+  it("starts a new chat, saves it under the user's id and returns the agent's reply", async () => {
+    fakeDb()
+    callModel.mockResolvedValue(reply('Any allergies?'))
+
+    const response = await handler(chatRequest({ message: 'plan my week' }))
+
+    expect(response.statusCode).toBe(200)
+    const body = JSON.parse(response.body ?? '')
+    expect(body.reply).toBe('Any allergies?')
+    expect(body.plan).toBeUndefined()
+    expect(savedChat()).toMatchObject({
+      userId: 'user-1',
+      chatId: body.chatId,
+      messages: [userSays('plan my week'), agentSays('Any allergies?')],
+      questionsAsked: 1,
+      version: 1,
+    })
+  })
+
+  it("continues the user's chat: the model sees the history and the new message", async () => {
+    fakeDb({ chat: existingChat(1) })
+    callModel.mockResolvedValue(reply('How much time do you have?'))
+
+    await handler(chatRequest({ chatId: 'chat-1', message: 'no allergies' }))
+
+    const get = send.mock.calls.map(([command]) => command).find((c) => c instanceof GetCommand)
+    expect(get?.input.Key).toEqual({ userId: 'user-1', chatId: 'chat-1' })
+    expect(callModel.mock.calls[0][0].slice(0, 3)).toEqual([
+      userSays('plan my week'),
+      agentSays('Any allergies?'),
+      userSays('no allergies'),
+    ])
+    expect(savedChat().questionsAsked).toBe(2)
+  })
+
+  it('after a search, returns and saves the answers it searched with, not counted as a question', async () => {
+    fakeDb({ chat: existingChat(1) })
+    callModel.mockResolvedValueOnce(searchCall).mockResolvedValueOnce(reply('Here are 3 meals'))
+
+    const response = await handler(
+      chatRequest({ chatId: 'chat-1', message: 'no allergies, I am busy' }),
+    )
+
+    const { plan } = JSON.parse(response.body ?? '')
+    expect(plan.answers).toEqual({ ...EMPTY_PLAN_ANSWERS, maxPrepMinutes: 30 })
+    expect(savedChat().plan).toEqual(plan.answers)
+    expect(savedChat().questionsAsked).toBe(1)
+  })
+
+  it('keeps allergies from earlier searches in the chat when the model leaves them out', async () => {
+    const plan = { ...EMPTY_PLAN_ANSWERS, avoid: ['walnut'] }
+    fakeDb({ chat: { ...existingChat(1), plan } })
+    callModel.mockResolvedValueOnce(searchCall).mockResolvedValueOnce(reply('Here are 3 meals'))
+
+    const response = await handler(chatRequest({ chatId: 'chat-1', message: 'something quick' }))
+
+    expect(JSON.parse(response.body ?? '').plan.answers.avoid).toEqual(['walnut'])
+    expect(savedChat().plan).toMatchObject({ avoid: ['walnut'], maxPrepMinutes: 30 })
+  })
+
+  it('keeps returning the last answers when the agent replies without searching', async () => {
+    const plan = { ...EMPTY_PLAN_ANSWERS, maxPrepMinutes: 30 }
+    fakeDb({ chat: { ...existingChat(1), plan } })
+    callModel.mockResolvedValue(reply('Anything else?'))
+
+    const response = await handler(chatRequest({ chatId: 'chat-1', message: 'thanks' }))
+
+    expect(JSON.parse(response.body ?? '').plan.answers).toEqual(plan)
+  })
+
+  it('after 4 questions, tells the model to suggest meals now', async () => {
+    fakeDb({ chat: existingChat(4) })
+    callModel.mockResolvedValue(reply('Here are 3 meals'))
+
+    await handler(chatRequest({ chatId: 'chat-1', message: 'something Persian' }))
+
+    const newMessage = callModel.mock.calls[0][0][2]
+    expect(newMessage.content[0]).toEqual({ text: 'something Persian' })
+    expect(newMessage.content[1].text).toMatch(/suggest/i)
+  })
+
+  it('answers 409 when the chat was saved by another request meanwhile, instead of losing a turn', async () => {
+    fakeDb({ chat: existingChat(1), changedMeanwhile: true })
+    callModel.mockResolvedValue(reply('How much time do you have?'))
+
+    const response = await handler(chatRequest({ chatId: 'chat-1', message: 'no allergies' }))
+
+    expect(response.statusCode).toBe(409)
+    expect(JSON.parse(response.body ?? '').code).toBe('chat-busy')
+  })
+
+  it("answers 404 for a chat that doesn't exist or has expired", async () => {
+    fakeDb()
+
+    const response = await handler(chatRequest({ chatId: 'chat-old', message: 'hi' }))
+
+    expect(response.statusCode).toBe(404)
+    expect(callModel).not.toHaveBeenCalled()
+  })
+
+  it('refuses an empty or too long message without calling the model', async () => {
+    fakeDb()
+
+    expect((await handler(chatRequest({ message: '  ' }))).statusCode).toBe(400)
+    expect((await handler(chatRequest({ message: 'x'.repeat(2001) }))).statusCode).toBe(400)
+    expect(callModel).not.toHaveBeenCalled()
+  })
+
+  it('refuses once the daily limit is reached, without calling the model', async () => {
+    fakeDb({ overLimit: true })
+
+    const response = await handler(chatRequest({ message: 'plan my week' }))
+
+    expect(response.statusCode).toBe(429)
+    expect(JSON.parse(response.body ?? '').code).toBe('daily-limit')
+    expect(callModel).not.toHaveBeenCalled()
   })
 })

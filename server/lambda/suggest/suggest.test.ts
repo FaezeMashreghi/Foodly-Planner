@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_PLAN_ANSWERS } from '@shared/week-plan/week-plan'
 import type { MealItem } from '@server/lambda/data/meals.ts'
-import { scoreMeal, suggestMeals, SUGGESTIONS_PER_MEAL_TYPE } from './suggest.ts'
+import { searchMeals, suggestMeals, SUGGESTIONS_PER_MEAL_TYPE } from './suggest.ts'
 
 function meal(id: string, overrides: Partial<MealItem> = {}): MealItem {
   return {
@@ -21,83 +21,22 @@ function meal(id: string, overrides: Partial<MealItem> = {}): MealItem {
 const withIngredients = (...ids: string[]): MealItem['ingredients'] =>
   ids.map((ingredientId) => ({ ingredientId, amount: 1, unit: 'piece' }))
 
-describe('scoreMeal', () => {
-  it('scores 0 when nothing was answered', () => {
-    expect(scoreMeal(meal('a'), EMPTY_PLAN_ANSWERS)).toBe(0)
-  })
-
-  it('counts each expiring ingredient the meal uses', () => {
-    const spinachTomato = meal('a', { ingredients: withIngredients('spinach', 'tomato', 'onion') })
-    expect(
-      scoreMeal(spinachTomato, { ...EMPTY_PLAN_ANSWERS, expiring: ['spinach', 'tomato'] }),
-    ).toBe(6)
-  })
-
-  it('adds points for a matching cuisine', () => {
-    expect(
-      scoreMeal(meal('a', { cuisine: 'persian' }), {
-        ...EMPTY_PLAN_ANSWERS,
-        cuisines: ['persian'],
-      }),
-    ).toBe(2)
-  })
-
-  it('caps the points for "more of" ingredients', () => {
-    const veg = meal('a', {
-      ingredients: withIngredients('broccoli', 'spinach', 'carrot', 'courgette'),
-    })
-    const answers = {
-      ...EMPTY_PLAN_ANSWERS,
-      wantMore: ['broccoli', 'spinach', 'carrot', 'courgette'],
-    }
-    expect(scoreMeal(veg, answers)).toBe(3)
-  })
-
-  it('prefers easy meals when the user wants easy', () => {
-    const answers = { ...EMPTY_PLAN_ANSWERS, easyOnly: true }
-    expect(scoreMeal(meal('a', { difficulty: 'easy' }), answers)).toBe(1)
-    expect(scoreMeal(meal('b', { difficulty: 'hard' }), answers)).toBe(-1)
-  })
-
-  it('pushes down meals over the time limit', () => {
-    const answers = { ...EMPTY_PLAN_ANSWERS, maxPrepMinutes: 30 }
-    expect(scoreMeal(meal('a', { prepMinutes: 30 }), answers)).toBe(0)
-    expect(scoreMeal(meal('b', { prepMinutes: 90 }), answers)).toBe(-3)
-  })
-})
-
 describe('suggestMeals', () => {
-  it('puts the must-have dish first', () => {
-    const meals = [
-      meal('ghormeh-sabzi', { prepMinutes: 180 }),
-      meal('salad', { cuisine: 'persian', ingredients: withIngredients('spinach') }),
-    ]
-    const answers = {
-      ...EMPTY_PLAN_ANSWERS,
-      expiring: ['spinach'],
-      cuisines: ['persian'],
-      maxPrepMinutes: 30,
-      mustHaveMealId: 'ghormeh-sabzi',
-    }
-
-    expect(suggestMeals(meals, answers).Dinner).toEqual(['ghormeh-sabzi', 'salad'])
-  })
-
+  // The suggestions screen can't warn about an allergen yet, so even a dish asked for by name is left out.
   it('leaves out meals with an ingredient to avoid, even the must-have dish', () => {
     const meals = [
-      meal('walnut-salad', { ingredients: withIngredients('walnut') }),
-      meal('rice', { ingredients: withIngredients('basmati-rice') }),
+      meal('salad', { ingredients: withIngredients('spinach') }),
+      meal('fesenjan', { ingredients: withIngredients('walnut') }),
+      meal('walnut-cake', { ingredients: withIngredients('walnut') }),
     ]
-    const answers = { ...EMPTY_PLAN_ANSWERS, avoid: ['walnut'], mustHaveMealId: 'walnut-salad' }
+    const answers = {
+      ...EMPTY_PLAN_ANSWERS,
+      avoid: ['walnut'],
+      expiring: ['spinach'],
+      mustHaveMealId: 'fesenjan',
+    }
 
-    expect(suggestMeals(meals, answers).Dinner).toEqual(['rice'])
-  })
-
-  it('sorts by score, then by id', () => {
-    const meals = [meal('c'), meal('b'), meal('a', { cuisine: 'turkish' })]
-    const answers = { ...EMPTY_PLAN_ANSWERS, cuisines: ['turkish'] }
-
-    expect(suggestMeals(meals, answers).Dinner).toEqual(['a', 'b', 'c'])
+    expect(suggestMeals(meals, answers).Dinner).toEqual(['salad'])
   })
 
   it('lists each meal type separately, with at most 10 each', () => {
@@ -111,5 +50,181 @@ describe('suggestMeals', () => {
     expect(suggestions.Breakfast).toEqual(['omelette'])
     expect(suggestions.Lunch).toEqual(['omelette'])
     expect(suggestions.Dinner).toHaveLength(SUGGESTIONS_PER_MEAL_TYPE)
+  })
+})
+
+describe('searchMeals', () => {
+  const ids = (result: ReturnType<typeof searchMeals>) => result.meals.map((found) => found.id)
+
+  it('never returns a meal with an ingredient to avoid, even when it is the best match', () => {
+    const meals = [
+      meal('fesenjan', {
+        cuisine: 'persian',
+        dishStyles: ['stew'],
+        ingredients: withIngredients('walnut', 'pomegranate-molasses', 'chicken-thigh'),
+      }),
+      meal('salad', { cuisine: 'persian', ingredients: withIngredients('lettuce') }),
+    ]
+    const wishes = {
+      expiring: ['chicken-thigh', 'pomegranate-molasses'],
+      cuisines: ['persian'],
+      dishStyles: ['stew' as const],
+    }
+
+    expect(ids(searchMeals(meals, { ...wishes, avoid: ['walnut', 'almond'] }))).toEqual(['salad'])
+  })
+
+  it('returns a dish asked for by name first, whatever filter it breaks, and says what it avoids', () => {
+    const meals = [
+      meal('menemen', { mealTypes: ['Breakfast'], cuisine: 'turkish', prepMinutes: 20 }),
+      meal('fesenjan', {
+        cuisine: 'persian',
+        prepMinutes: 120,
+        ingredients: withIngredients('walnut', 'chicken-thigh'),
+      }),
+    ]
+
+    const result = searchMeals(meals, {
+      mealType: 'Breakfast',
+      maxPrepMinutes: 30,
+      avoid: ['walnut'],
+      cuisines: ['turkish'],
+      mustHaveMealId: 'fesenjan',
+    }).meals
+
+    expect(result.map((found) => found.id)).toEqual(['fesenjan', 'menemen'])
+    expect(result[0].hasAvoided).toEqual(['walnut'])
+    expect(result[1]).not.toHaveProperty('hasAvoided')
+  })
+
+  it('applies every rule of a real request together', () => {
+    const meals = [
+      meal('fesenjan', {
+        cuisine: 'persian',
+        dishStyles: ['stew'],
+        prepMinutes: 120,
+        ingredients: withIngredients('walnut', 'chicken-thigh'),
+      }),
+      meal('ghormeh-sabzi', {
+        cuisine: 'persian',
+        dishStyles: ['stew'],
+        prepMinutes: 180,
+        ingredients: withIngredients('lamb-stew-meat', 'spinach'),
+      }),
+      meal('adasi', {
+        cuisine: 'persian',
+        dishStyles: ['soup'],
+        prepMinutes: 40,
+        ingredients: withIngredients('red-lentil'),
+      }),
+      meal('kuku-sabzi', {
+        cuisine: 'persian',
+        dishStyles: ['egg-dish'],
+        prepMinutes: 40,
+        ingredients: withIngredients('spinach', 'egg', 'walnut'),
+      }),
+      meal('menemen', {
+        cuisine: 'turkish',
+        mealTypes: ['Breakfast'],
+        prepMinutes: 20,
+        ingredients: withIngredients('egg', 'tomato'),
+      }),
+      meal('chicken-teriyaki-rice', {
+        cuisine: 'asian',
+        prepMinutes: 30,
+        ingredients: withIngredients('chicken-thigh', 'jasmine-rice'),
+      }),
+      meal('spinach-soup', {
+        cuisine: 'international',
+        dishStyles: ['soup'],
+        prepMinutes: 30,
+        ingredients: withIngredients('spinach'),
+      }),
+      meal('baghala-ghatogh', {
+        cuisine: 'persian',
+        dishStyles: ['stew'],
+        prepMinutes: 35,
+        ingredients: withIngredients('broad-bean', 'egg'),
+      }),
+      meal('mirza-ghasemi', {
+        cuisine: 'persian',
+        dishStyles: ['stew'],
+        prepMinutes: 35,
+        ingredients: withIngredients('aubergine', 'egg'),
+      }),
+    ]
+
+    const result = searchMeals(meals, {
+      mealType: 'Dinner',
+      avoid: ['walnut'],
+      maxPrepMinutes: 45,
+      expiring: ['spinach'],
+      cuisines: ['persian'],
+      dishStyles: ['soup'],
+    })
+
+    // Out: fesenjan and kuku-sabzi (walnut), ghormeh-sabzi (too slow), menemen (breakfast only).
+    // Persian: adasi (persian 2 + soup 2 = 4), baghala-ghatogh and mirza-ghasemi (2 each, by id).
+    // 3 Persian allow 1 other (at least 70%): spinach-soup (spinach 3 + soup 2) beats teriyaki (0).
+    expect(ids(result)).toEqual(['adasi', 'baghala-ghatogh', 'mirza-ghasemi', 'spinach-soup'])
+  })
+
+  describe('when the user asks for a cuisine', () => {
+    // Asian meals that use the expiring spinach score higher than the Persian ones.
+    const persian = (count: number) =>
+      Array.from({ length: count }, (_, i) => meal(`persian-${i}`, { cuisine: 'persian' }))
+    const asian = (count: number) =>
+      Array.from({ length: count }, (_, i) =>
+        meal(`asian-${i}`, { cuisine: 'asian', ingredients: withIngredients('spinach') }),
+      )
+    const wishes = { cuisines: ['persian'], expiring: ['spinach'] }
+
+    it('returns only that cuisine when 10 or more of it fit, even when others score higher', () => {
+      const result = searchMeals([...asian(5), ...persian(12)], wishes).meals
+
+      expect(result).toHaveLength(10)
+      expect(result.every((found) => found.cuisine === 'persian')).toBe(true)
+    })
+
+    it('keeps at least 70% of the meals in that cuisine, others only fill the rest', () => {
+      const result = searchMeals([...asian(5), ...persian(8)], wishes).meals
+
+      expect(result.map((found) => found.cuisine)).toEqual([
+        ...Array(8).fill('persian'),
+        'asian',
+        'asian',
+      ])
+    })
+
+    it('adds no other cuisine when that would drop below 70%', () => {
+      const result = searchMeals([...asian(12), ...persian(2)], wishes).meals
+
+      expect(result.map((found) => found.cuisine)).toEqual(['persian', 'persian'])
+    })
+
+    it('returns nothing when no meal of that cuisine fits, so the agent can say so', () => {
+      expect(searchMeals(asian(5), wishes).meals).toEqual([])
+    })
+  })
+
+  it('returns short meals with their ingredients and the wanted ones they use', () => {
+    const omelette = meal('omelette', {
+      dishStyles: ['egg-dish'],
+      activeMinutes: 10,
+      ingredients: withIngredients('egg', 'tomato'),
+    })
+
+    expect(searchMeals([omelette], { expiring: ['tomato', 'spinach'] }).meals).toEqual([
+      {
+        id: 'omelette',
+        name: 'omelette',
+        cuisine: 'international',
+        prepMinutes: 30,
+        activeMinutes: 10,
+        dishStyles: ['egg-dish'],
+        ingredients: ['egg', 'tomato'],
+        usesWanted: ['tomato'],
+      },
+    ])
   })
 })

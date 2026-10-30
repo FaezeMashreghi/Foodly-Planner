@@ -1,13 +1,11 @@
-import { BedrockRuntimeClient, ConverseCommand, type Tool } from '@aws-sdk/client-bedrock-runtime'
+import { ConverseCommand, type Tool } from '@aws-sdk/client-bedrock-runtime'
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import type { Recipe } from '@shared/meal/meal'
+import { bedrock, MODEL_ID } from '@server/lambda/data/bedrock.ts'
 import { db, isConditionFailed } from '@server/lambda/data/db.ts'
 import { MEALS_TABLE as TABLE, type MealItem } from '@server/lambda/data/meals.ts'
 
 type MealWithRecipe = MealItem & { recipe?: Recipe }
-
-const bedrock = new BedrockRuntimeClient({})
-const MODEL_ID = process.env.MODEL_ID
 
 const SYSTEM = `You write clear, simple home-cooking recipes.
 Build the recipe around the ingredients given. Add any spices, herbs and pantry basics
@@ -73,7 +71,6 @@ export async function getRecipe(mealId: string): Promise<Recipe | null> {
 }
 
 async function writeRecipe(meal: MealItem): Promise<Recipe> {
-  if (!MODEL_ID) throw new Error('MODEL_ID is not set')
   const ingredients = meal.ingredients
     .map((item) => `- ${item.amount} ${item.unit} ${item.ingredientId}`)
     .join('\n')

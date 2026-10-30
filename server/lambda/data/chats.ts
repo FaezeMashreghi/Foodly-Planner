@@ -1,0 +1,46 @@
+import type { Message } from '@aws-sdk/client-bedrock-runtime'
+import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
+import type { PlanAnswers } from '@shared/week-plan/week-plan'
+import { db, isConditionFailed } from './db.ts'
+
+const CHATS_TABLE = process.env.CHATS_TABLE ?? 'foodly-chats'
+const KEEP_SECONDS = 7 * 24 * 60 * 60
+
+export type Chat = {
+  userId: string
+  chatId: string
+  messages: Message[]
+  questionsAsked: number
+  plan?: PlanAnswers
+  version: number
+}
+
+export async function getChat(userId: string, chatId: string) {
+  const { Item } = await db.send(
+    new GetCommand({ TableName: CHATS_TABLE, Key: { userId, chatId } }),
+  )
+  // TTL deletes expired items in the background, often days late, so check the time here too.
+  if (!Item || Item.expiresAt <= Date.now() / 1000) return undefined
+  return Item as Chat
+}
+
+export async function saveChat(chat: Chat) {
+  try {
+    await db.send(
+      new PutCommand({
+        TableName: CHATS_TABLE,
+        Item: {
+          ...chat,
+          version: chat.version + 1,
+          expiresAt: Math.floor(Date.now() / 1000) + KEEP_SECONDS,
+        },
+        ConditionExpression: 'attribute_not_exists(version) OR version = :loaded',
+        ExpressionAttributeValues: { ':loaded': chat.version },
+      }),
+    )
+    return true
+  } catch (error) {
+    if (isConditionFailed(error)) return false
+    throw error
+  }
+}

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import type { Message } from '@aws-sdk/client-bedrock-runtime'
 import {
   GetCommand,
   QueryCommand,
@@ -17,12 +19,24 @@ import {
   type PlanAnswers,
   type PlanSlots,
 } from '@shared/week-plan/week-plan'
+import { runTurn, type RunTool } from './agent/loop.ts'
+import { bedrockModel } from './agent/model.ts'
+import { planPrompt } from './agent/prompt.ts'
 import { labelsFor, loadCatalog, withNames, type Catalog } from './data/catalog.ts'
+import { getChat, saveChat, type Chat } from './data/chats.ts'
 import { db } from './data/db.ts'
 import { loadMeals } from './data/meals.ts'
 import { claimDailyCall } from './data/usage.ts'
 import { getRecipe } from './recipe/recipe.ts'
-import { suggestMeals } from './suggest/suggest.ts'
+import {
+  cleanSearchInput,
+  knownIdsFrom,
+  planAnswersFrom,
+  SEARCH_MEALS,
+  searchMealsTool,
+  withEarlierAvoid,
+} from './suggest/search-tool.ts'
+import { searchMeals, suggestMeals, type SearchInput } from './suggest/suggest.ts'
 import { checkAnswers, understand } from './understand/understand.ts'
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer
@@ -31,6 +45,12 @@ type Result = APIGatewayProxyStructuredResultV2
 const PLANS_TABLE = process.env.PLANS_TABLE
 // Each call costs Bedrock tokens; this caps what one user can spend in a day.
 const UNDERSTAND_CALLS_PER_DAY = 20
+const CHAT_MESSAGES_PER_DAY = 60
+// After this many questions, code adds SUGGEST_NOW to the user's message, so the budget doesn't
+// depend on the prompt.
+const MAX_QUESTIONS = 4
+const SUGGEST_NOW =
+  'Note from the app: you have asked enough questions. Search and suggest meals now.'
 
 export const handler = async (event: Event): Promise<Result> => {
   try {
@@ -68,6 +88,8 @@ function route(event: Event): Promise<Result> | Result {
       return getSuggestions(userId, event.queryStringParameters?.week)
     case 'GET /plans':
       return getPlanHistory(userId)
+    case 'POST /plan/chat':
+      return chatMessage(userId, event.body)
     default:
       return json(404, { message: 'Not found' })
   }
@@ -195,9 +217,62 @@ function update(userId: string, weekStart: string, field: string, value: unknown
   )
 }
 
+async function chatMessage(userId: string, body: string | undefined) {
+  const request = parseJson(body)
+  const message = stringField(request, 'message')?.trim()
+  if (!message || message.length > 2000) {
+    return json(400, { message: 'message must be 1 to 2000 characters' })
+  }
+  if (!(await claimDailyCall(userId, 'chat', CHAT_MESSAGES_PER_DAY))) {
+    return json(429, { code: 'daily-limit', message: 'Daily limit reached' })
+  }
+
+  const chatId = stringField(request, 'chatId')
+  const chat: Chat | undefined = chatId
+    ? await getChat(userId, chatId)
+    : { userId, chatId: randomUUID(), messages: [], questionsAsked: 0, version: 0 }
+  if (!chat) return json(404, { code: 'chat-not-found', message: 'This chat has expired' })
+
+  const [meals, catalog] = await Promise.all([loadMeals(), loadCatalog()])
+  const known = knownIdsFrom(catalog, meals)
+  // The last cleaned search becomes the week's answers: exactly what the meals were found with.
+  let search: SearchInput | undefined
+  const runTool: RunTool = async (name, input) => {
+    if (name === SEARCH_MEALS) {
+      search = withEarlierAvoid(cleanSearchInput(input, known), (search ?? chat.plan)?.avoid)
+      return searchMeals(meals, search)
+    }
+    throw new Error(`Unknown tool: ${name}`)
+  }
+
+  chat.messages = await runTurn([...chat.messages, userMessage(message, chat.questionsAsked)], {
+    callModel: bedrockModel(planPrompt(SEARCH_MEALS), [searchMealsTool(known)]),
+    runTool,
+  })
+
+  if (search) chat.plan = planAnswersFrom(search)
+  else chat.questionsAsked++
+  if (!(await saveChat(chat))) {
+    return json(409, { code: 'chat-busy', message: 'This chat changed in another tab' })
+  }
+
+  const plan = chat.plan && { answers: chat.plan, labels: labelsFor(chat.plan, catalog, meals) }
+  return json(200, { chatId: chat.chatId, reply: textOf(chat.messages.at(-1)), plan })
+}
+
+function userMessage(text: string, questionsAsked: number): Message {
+  const content = [{ text }]
+  if (questionsAsked >= MAX_QUESTIONS) content.push({ text: SUGGEST_NOW })
+  return { role: 'user', content }
+}
+
+function textOf(message: Message | undefined) {
+  return message?.content?.map((block) => block.text ?? '').join('') ?? ''
+}
+
 async function understandText(userId: string, body: string | undefined) {
   const request = parseJson(body)
-  const text = isObject(request) && typeof request.text === 'string' ? request.text.trim() : ''
+  const text = stringField(request, 'text')?.trim()
   if (!text || text.length > 2000) {
     return json(400, { message: 'text must be 1 to 2000 characters' })
   }
@@ -224,6 +299,10 @@ const MEAL_ID = /^[a-z0-9-]{1,80}$/
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function stringField(value: unknown, key: string) {
+  return isObject(value) && typeof value[key] === 'string' ? value[key] : undefined
 }
 
 function isSlots(value: unknown): value is PlanSlots {

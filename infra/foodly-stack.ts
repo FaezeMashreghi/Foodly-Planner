@@ -55,18 +55,30 @@ export class FoodlyStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     })
 
+    // Agent chats, deleted 7 days after the last message. The user's choices are saved to their
+    // profile and plans, so nothing lives only here.
+    const chatsTable = new Table(this, 'ChatsTable', {
+      tableName: 'foodly-chats',
+      partitionKey: { name: 'userId', type: AttributeType.STRING },
+      sortKey: { name: 'chatId', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'expiresAt',
+      removalPolicy: RemovalPolicy.DESTROY,
+    })
+
     const backend = new NodejsFunction(this, 'Backend', {
       entry: path.join(import.meta.dirname, '../server/lambda/index.ts'),
       runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       memorySize: 256,
-      // The AI routes wait for Bedrock.
-      timeout: Duration.seconds(20),
+      // The agent can call Bedrock several times in one request. API Gateway gives up at 30s.
+      timeout: Duration.seconds(28),
       environment: {
         PLANS_TABLE: plansTable.tableName,
         MEALS_TABLE: mealsTable.tableName,
         USAGE_TABLE: usageTable.tableName,
         CATALOG_TABLE: catalogTable.tableName,
+        CHATS_TABLE: chatsTable.tableName,
         MODEL_ID: `eu.${HAIKU_MODEL}`,
       },
       bundling: {
@@ -85,6 +97,7 @@ export class FoodlyStack extends Stack {
     mealsTable.grant(backend, 'dynamodb:Scan', 'dynamodb:GetItem', 'dynamodb:UpdateItem')
     usageTable.grant(backend, 'dynamodb:UpdateItem')
     catalogTable.grant(backend, 'dynamodb:Query')
+    chatsTable.grant(backend, 'dynamodb:GetItem', 'dynamodb:PutItem')
     // The "eu." inference profile sends each call to one of the EU regions.
     backend.addToRolePolicy(
       new PolicyStatement({
@@ -121,6 +134,7 @@ export class FoodlyStack extends Stack {
       [HttpMethod.GET, '/plan/suggestions'],
       [HttpMethod.PUT, '/plan/answers'],
       [HttpMethod.POST, '/plan/understand'],
+      [HttpMethod.POST, '/plan/chat'],
       [HttpMethod.GET, '/plans'],
     ]
     const httpRoutes = routes.flatMap(([method, routePath]) =>
@@ -134,6 +148,7 @@ export class FoodlyStack extends Stack {
     // Plain JSON passed to CloudFormation as is, so the keys use its PascalCase names.
     stage.routeSettings = {
       'POST /plan/understand': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 5 },
+      'POST /plan/chat': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 10 },
       'POST /meals/{id}/recipe': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 5 },
     }
     // The stage can only name routes that already exist.

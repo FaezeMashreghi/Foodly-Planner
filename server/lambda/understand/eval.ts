@@ -4,7 +4,8 @@
 //   ... npm run eval -- lentil                       only cases whose name contains "lentil"
 import { readFile } from 'node:fs/promises'
 import type { PlanAnswers } from '@shared/week-plan/week-plan'
-import { MODEL_ID, understand } from './understand.ts'
+import { MODEL_ID } from '@server/lambda/data/bedrock.ts'
+import { understand } from './understand.ts'
 
 type Field = keyof PlanAnswers
 type TestCase = { name: string; input: string; expected: PlanAnswers }
